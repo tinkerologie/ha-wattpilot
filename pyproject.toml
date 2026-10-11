@@ -25,9 +25,9 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/ruaan-deysel/ha-wattpilot"
-"Bug Tracker" = "https://github.com/ruaan-deysel/ha-wattpilot/issues"
-"Documentation" = "https://github.com/ruaan-deysel/ha-wattpilot#readme"
+"Homepage" = "https://github.com/tinkerologie/ha-wattpilot"
+"Bug Tracker" = "https://github.com/tinkerologie/ha-wattpilot/issues"
+"Documentation" = "https://github.com/tinkerologie/ha-wattpilot#readme"
 
 [dependency-groups]
 dev = [

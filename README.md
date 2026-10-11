@@ -1,12 +1,12 @@
 # Fronius Wattpilot Integration for Home Assistant
 
 [![HACS Integration](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/custom-components/hacs)
-[![GitHub Release](https://img.shields.io/github/release/ruaan-deysel/ha-wattpilot.svg)](https://github.com/ruaan-deysel/ha-wattpilot/releases)
+[![GitHub Release](https://img.shields.io/github/release/ruaan-deysel/ha-wattpilot.svg)](https://github.com/tinkerologie/ha-wattpilot/releases)
 [![License](https://img.shields.io/github/license/ruaan-deysel/ha-wattpilot.svg)](LICENSE)
 
 Custom Home Assistant integration for monitoring and controlling Fronius Wattpilot EV chargers using a reverse-engineered WebSocket API.
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ruaan-deysel&repository=ha-wattpilot&category=integration)
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=tinkerologie&repository=ha-wattpilot&category=integration)
 
 ## Features
 
@@ -21,14 +21,14 @@ Custom Home Assistant integration for monitoring and controlling Fronius Wattpil
 
 ### HACS (Recommended)
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ruaan-deysel&repository=ha-wattpilot&category=integration)
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=tinkerologie&repository=ha-wattpilot&category=integration)
 
 **Manual HACS Installation:**
 
 1. Open HACS in Home Assistant
 2. Go to Integrations
 3. Click the ⋮ menu → Custom repositories
-4. Add this repository: `https://github.com/ruaan-deysel/ha-wattpilot`
+4. Add this repository: `https://github.com/tinkerologie/ha-wattpilot`
 5. Category: Integration
 6. Click Add
 7. Search for "Fronius Wattpilot"
@@ -37,7 +37,7 @@ Custom Home Assistant integration for monitoring and controlling Fronius Wattpil
 
 ### Manual
 
-1. Download the latest release from the [Releases](https://github.com/ruaan-deysel/ha-wattpilot/releases) page
+1. Download the latest release from the [Releases](https://github.com/tinkerologie/ha-wattpilot/releases) page
 2. Extract the `wattpilot` folder to your Home Assistant `config/custom_components/` directory
 3. Restart Home Assistant
 
@@ -128,7 +128,7 @@ Contributions are welcome! Please:
 ### Development Setup
 
 ```bash
-git clone https://github.com/ruaan-deysel/ha-wattpilot.git
+git clone https://github.com/tinkerologie/ha-wattpilot.git
 cd ha-wattpilot
 ./scripts/setup    # Install dependencies
 ./scripts/develop  # Start Home Assistant dev instance
