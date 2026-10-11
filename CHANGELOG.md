@@ -44,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed `session_energy` reset handling: allow significant value drops (>= 1.0) to pass through so true resets (e.g. starting a new charging session) work, while preserving monotonicity protection against small floating-point measurement noise.
 - Renamed sensor from "Connection Charged" to "Session Energy" in translations, matching the official Solar.WattPilot app naming.
-- Contributor: [@TiSocks](https://github.com/TiSocks) in [#118](https://github.com/ruaan-deysel/ha-wattpilot/pull/118).
+- Contributor: [@TiSocks](https://github.com/TiSocks) in [#118](https://github.com/tinkerologie/ha-wattpilot/pull/118).
 
 ### Security
 
@@ -58,9 +58,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Updated development dependencies:
-  - `homeassistant>=2026.9.0` ([#121](https://github.com/ruaan-deysel/ha-wattpilot/pull/121))
-  - `pytest-homeassistant-custom-component>=0.13.363` ([#120](https://github.com/ruaan-deysel/ha-wattpilot/pull/120))
-  - `ruff>=0.16.6` ([#119](https://github.com/ruaan-deysel/ha-wattpilot/pull/119))
+  - `homeassistant>=2026.9.0` ([#121](https://github.com/tinkerologie/ha-wattpilot/pull/121))
+  - `pytest-homeassistant-custom-component>=0.13.363` ([#120](https://github.com/tinkerologie/ha-wattpilot/pull/120))
+  - `ruff>=0.16.6` ([#119](https://github.com/tinkerologie/ha-wattpilot/pull/119))
 - Relaxed `pytest>=9.0.0` in `pyproject.toml` and added `pytest` to Dependabot ignore list in `.github/dependabot.yml` to track `pytest-homeassistant-custom-component`'s pinned version and maintain lockfile stability.
 
 ## [2026.8.0] - 2026-08-30
@@ -69,7 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Updated the `car_connected` sensor to report simplified connection states derived from car status: `Disconnected` (`1`) and `Connected` (`2`, `3`, `4`), with `Unknown` (`0`) and `Error` (`5`) retained.
 - Updated `car_connected` sensor description text to match the new binary-style connection reporting.
-- Contributor: [@TiSocks](https://github.com/TiSocks) in [#105](https://github.com/ruaan-deysel/ha-wattpilot/pull/105).
+- Contributor: [@TiSocks](https://github.com/TiSocks) in [#105](https://github.com/tinkerologie/ha-wattpilot/pull/105).
 
 ## [2026.6.2] - 2026-06-14
 
@@ -125,8 +125,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Resolved dependency-resolution blockers caused by older pinned transitive versions in the Python 3.13 dependency path.
 - Unblocked upgrades to latest secure dependency branches by aligning runtime, test tooling, and Home Assistant versions.
-- Addressed [#12](https://github.com/ruaan-deysel/ha-wattpilot/issues/12): Error Validating platform state 100055.
-- Addressed [#11](https://github.com/ruaan-deysel/ha-wattpilot/issues/11): expose next trip time.
+- Addressed [#12](https://github.com/tinkerologie/ha-wattpilot/issues/12): Error Validating platform state 100055.
+- Addressed [#11](https://github.com/tinkerologie/ha-wattpilot/issues/11): expose next trip time.
 
 ## [2026.2.0] - 2026-02-11
 
