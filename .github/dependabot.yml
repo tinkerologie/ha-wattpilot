@@ -6,26 +6,63 @@
 
 version: 2
 updates:
-  - package-ecosystem: "devcontainers"
-    directory: "/"
+  - package-ecosystem: devcontainers
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      devcontainers-minor-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+  - package-ecosystem: pip
+    directory: /
     schedule:
       interval: daily
-
-  - package-ecosystem: "pip"
-    directory: "/"
-    schedule:
-      interval: daily
-    allow:
-      - dependency-type: "all"
-    versioning-strategy: increase
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      pip-minor-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
     ignore:
       # pytest and pytest-asyncio are pinned (==) by pytest-homeassistant-custom-component.
       # Letting Dependabot raise their floor independently produces an
       # unsatisfiable lock; it must track whatever pthcc allows.
-      - dependency-name: "pytest"
-      - dependency-name: "pytest-asyncio"
+      - dependency-name: pytest
+      - dependency-name: pytest-asyncio
 
-  - package-ecosystem: "github-actions"
-    directory: "/"
+    allow:
+      - dependency-type: all
+    versioning-strategy: increase
+  - package-ecosystem: github-actions
+    directory: /
     schedule:
-      interval: daily
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      github-actions-minor-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
