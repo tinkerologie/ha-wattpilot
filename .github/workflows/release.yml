@@ -7,6 +7,9 @@ on:
     paths:
       - custom_components/wattpilot/manifest.json
 
+permissions:
+  contents: read # jobs request only what they need
+
 jobs:
   check-version:
     name: Check Version
@@ -21,8 +24,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-
           persist-credentials: false
+
       - name: Get version from manifest.json
         id: get_version
         run: |
@@ -54,9 +57,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
         with:
           persist-credentials: false
+
       - name: Extract changelog for version
         id: changelog
         env:
@@ -106,5 +109,3 @@ jobs:
           echo "**Version:** v${CHECK_VERSION_VERSION}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Release URL:** ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/v${CHECK_VERSION_VERSION}" >> $GITHUB_STEP_SUMMARY
-permissions:
-  contents: read # jobs request only what they need
