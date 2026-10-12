@@ -23,7 +23,8 @@ updates:
         update-types:
           - minor
           - patch
-  # uv: Dependabot updates pyproject.toml and uv.lock together, for version and security updates.
+  # uv: Dependabot updates uv.lock for version and security updates, and pyproject.toml
+  # only when a constraint has to change.
   - package-ecosystem: uv
     directory: /
     schedule:
