@@ -12,7 +12,7 @@ jobs:
     name: Check Version
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: read # check out the repository
     outputs:
       version: ${{ steps.get_version.outputs.version }}
       version_changed: ${{ steps.check_tag.outputs.version_changed }}
@@ -22,6 +22,7 @@ jobs:
         with:
           fetch-depth: 0
 
+          persist-credentials: false
       - name: Get version from manifest.json
         id: get_version
         run: |
@@ -31,8 +32,10 @@ jobs:
 
       - name: Check if tag exists
         id: check_tag
+        env:
+          GET_VERSION_VERSION: ${{ steps.get_version.outputs.version }}
         run: |
-          VERSION="${{ steps.get_version.outputs.version }}"
+          VERSION="${GET_VERSION_VERSION}"
           if git rev-parse "v$VERSION" >/dev/null 2>&1; then
             echo "Tag v$VERSION already exists"
             echo "version_changed=false" >> $GITHUB_OUTPUT
@@ -47,15 +50,19 @@ jobs:
     if: needs.check-version.outputs.version_changed == 'true'
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write # create the GitHub release and tag
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+        with:
+          persist-credentials: false
       - name: Extract changelog for version
         id: changelog
+        env:
+          CHECK_VERSION_VERSION: ${{ needs.check-version.outputs.version }}
         run: |
-          VERSION="${{ needs.check-version.outputs.version }}"
+          VERSION="${CHECK_VERSION_VERSION}"
           echo "Extracting changelog for version $VERSION"
 
           # Extract the section for this version from CHANGELOG.md
@@ -91,9 +98,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Summary
+        env:
+          CHECK_VERSION_VERSION: ${{ needs.check-version.outputs.version }}
         run: |
           echo "## Release Created! 🎉" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** v${{ needs.check-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** v${CHECK_VERSION_VERSION}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Release URL:** ${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ needs.check-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Release URL:** ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/v${CHECK_VERSION_VERSION}" >> $GITHUB_STEP_SUMMARY
+permissions:
+  contents: read # jobs request only what they need
