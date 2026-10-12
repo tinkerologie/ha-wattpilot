@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-import datetime
+import datetime as dt
 import functools
 import logging
 from typing import TYPE_CHECKING, Any, Final, cast
@@ -38,7 +38,7 @@ _TRIGGER_TIME_MAX_SECOND: Final = 59
 _REDACT_MIN_LEN: Final = 8
 
 
-def _parse_trigger_time(trigger_time: Any) -> datetime.time | None:
+def _parse_trigger_time(trigger_time: Any) -> dt.time | None:
     if not isinstance(trigger_time, str):
         return None
 
@@ -60,7 +60,7 @@ def _parse_trigger_time(trigger_time: Any) -> datetime.time | None:
     ):
         return None
 
-    return datetime.time(hour, minute, second)
+    return dt.time(hour, minute, second)
 
 
 async def async_registerService(hass: HomeAssistant, name: str, service) -> None:
