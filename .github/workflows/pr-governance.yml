@@ -27,7 +27,9 @@ concurrency:
 
 jobs:
   validate-template-and-issues:
-    name: Validate PR Template, Linked Issues & HA Standards
+    name: PR Governance
+    if: "!endsWith(github.event.pull_request.user.login, '[bot]')"
+
     runs-on: ubuntu-latest
     outputs:
       errors: ${{ steps.governance.outputs.errors }}
@@ -36,12 +38,10 @@ jobs:
     # github.actor: CodeRabbit editing a PR description fires an `edited` event
     # whose actor is a bot, and a skipped run would replace an earlier failure
     # with a passing check.
-    if: "!endsWith(github.event.pull_request.user.login, '[bot]')"
-
     steps:
       - id: governance
         name: Enforce PR template completion, issue linking, and HA standards
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const body = context.payload.pull_request.body || "";
@@ -348,14 +348,17 @@ jobs:
     # Report failures (and later fixes) as a Tinkerologie-Bot comment. Skipped for
     # bot-authored PRs, drafts, superseded runs, and repositories without the
     # org-level bot credentials (private repositories on the Free plan).
+    # always(): once started, a report finishes even if a newer push cancels this
+    # run. The reusable workflow serialises reports per PR, so the newer run's
+    # report then updates the comment after this one, never before.
     if: >-
-      !cancelled() &&
+      always() &&
       vars.TINKER_BOT_CLIENT_ID != '' &&
       needs.validate-template-and-issues.result != 'skipped' &&
       needs.validate-template-and-issues.result != 'cancelled' &&
       needs.validate-template-and-issues.outputs.skipped != 'draft'
     permissions: {}
-    uses: tinkerologie/.github/.github/workflows/governance-report.yml@b2415ca577f4eca7d9897d6229357b7614f67348 # v1.4.1
+    uses: tinkerologie/.github/.github/workflows/governance-report.yml@13a80ae8683378c7e811b4f902aa1aabd6cebb6e # v1.4.3
     with:
       pr-number: ${{ github.event.pull_request.number }}
       result: ${{ needs.validate-template-and-issues.result }}

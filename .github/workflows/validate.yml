@@ -1,45 +1,38 @@
 name: Validate
 
 on:
+  push:
+    branches: [main]
   pull_request:
-    branches:
-      - master
+    types: [opened, synchronize, reopened, ready_for_review]
+  schedule:
+    - cron: 23 2 * * *
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.13"
-
-      - name: Install ruff
-        run: pip install ruff
-
-      - name: Run ruff format check
-        run: ruff format --check custom_components/wattpilot/*.py
-        continue-on-error: true
-
-      - name: Run ruff lint
-        run: ruff check custom_components/wattpilot/*.py --output-format=github
-        continue-on-error: true
-
   validate-version:
+    name: Version
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-
+          persist-credentials: false
       - name: Check if manifest.json changed
         id: manifest_changed
+        env:
+          # Compare against the PR base, the previous push, or main for manual runs.
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before || 'origin/main' }}
         run: |
-          if git diff --name-only origin/master...HEAD | grep -q "custom_components/wattpilot/manifest.json"; then
+          if git diff --name-only "$BASE"...HEAD | grep -q "custom_components/wattpilot/manifest.json"; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
@@ -68,26 +61,30 @@ jobs:
           echo "✅ CHANGELOG.md contains entry for version $VERSION"
 
   hacs-validate:
+    name: HACS
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
-
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: HACS Validation
-        uses: hacs/action@main
+        uses: hacs/action@1ebf01c408f29afcb6406bd431bc98fd8cbb15aa # main
         with:
           category: integration
 
   quality-scale:
+    name: Quality Scale
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          python-version: "3.13"
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.13'
 
       - name: Install PyYAML
         run: python -m pip install --upgrade pip pyyaml

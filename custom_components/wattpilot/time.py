@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import logging
 from typing import TYPE_CHECKING, Any, Final
 
@@ -80,13 +80,13 @@ class ChargerTime(ChargerPlatformEntity, TimeEntity):
     entity_description: WattpilotTimeEntityDescription
 
     @property
-    def native_value(self) -> datetime.time | None:
+    def native_value(self) -> dt.time | None:
         """Return the current time value."""
         return self._attr_native_value  # type: ignore[return-value]
 
     async def _async_update_validate_platform_state(
         self, state: Any = None
-    ) -> datetime.time | None:
+    ) -> dt.time | None:
         """Async: Validate and convert seconds-since-midnight to datetime.time."""
         try:
             if state is None:
@@ -96,7 +96,7 @@ class ChargerTime(ChargerPlatformEntity, TimeEntity):
             remaining = seconds % _SECONDS_PER_HOUR
             minute = remaining // _SECONDS_PER_MINUTE
             second = remaining % _SECONDS_PER_MINUTE
-            return datetime.time(hour, minute, second)
+            return dt.time(hour, minute, second)
         except (TypeError, ValueError) as e:
             _LOGGER.warning(
                 "%s - %s: _async_update_validate_platform_state failed to convert state to time: %s (%s)",
@@ -107,7 +107,7 @@ class ChargerTime(ChargerPlatformEntity, TimeEntity):
             )
             return None
 
-    async def async_set_value(self, value: datetime.time) -> None:
+    async def async_set_value(self, value: dt.time) -> None:
         """Async: Set the departure time for the next trip."""
         try:
             _LOGGER.debug(
