@@ -1,22 +1,140 @@
 name: Dependabot Auto-merge
 
 # Merges Dependabot pull requests whose largest update is a patch or minor version once
-# every other check has passed. Majors are left for a person. See STANDARDS.md in
-# tinkerologie/.github.
+# every other check has passed. Majors are left for a person.
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
-permissions: {}
+permissions:
+  contents: write # merge the pull request
+  pull-requests: write # merge the pull request
+  checks: read # wait for check runs
+  statuses: read # wait for commit statuses
 
 jobs:
-  auto-merge:
-    name: Auto-merge
+  merge:
+    name: Merge when CI passes
     if: github.event.pull_request.user.login == 'dependabot[bot]'
-    uses: tinkerologie/.github/.github/workflows/dependabot-auto-merge.yml@d0f9f9b745d716bd70ccd4e1f8580a1e3082b80e # v1.5.5
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    concurrency:
+      group: dependabot-auto-merge-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     permissions:
       contents: write # merge the pull request
       pull-requests: write # merge the pull request
       checks: read # wait for check runs
       statuses: read # wait for commit statuses
+    steps:
+      - name: Read Dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+        with:
+          github-token: ${{ github.token }}
+
+      - name: Decide whether the update may merge on its own
+        id: decide
+        env:
+          UPDATE_TYPE: ${{ steps.meta.outputs.update-type }}
+          DEPENDENCIES: ${{ steps.meta.outputs.dependency-names }}
+        run: |
+          case "$UPDATE_TYPE" in
+            version-update:semver-patch|version-update:semver-minor)
+              echo "eligible=true" >> "$GITHUB_OUTPUT"
+              echo "::notice::$UPDATE_TYPE ($DEPENDENCIES): will merge once every check passes."
+              ;;
+            *)
+              echo "eligible=false" >> "$GITHUB_OUTPUT"
+              echo "::notice::${UPDATE_TYPE:-unclassified update} ($DEPENDENCIES): left for a person to review."
+              ;;
+          esac
+
+      - name: Wait for every other check, then merge
+        if: steps.decide.outputs.eligible == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          # This run itself never settles while it waits.
+          ignored() { [[ "$1" == *"/actions/runs/${GITHUB_RUN_ID}/"* ]]; }
+          # Codecov can stay pending forever on lock-file-only changes: do not wait for it,
+          # but do count its result once it reports.
+          codecov() { [[ "$1" == codecov/* ]]; }
+
+          settled=0
+          for attempt in $(seq 1 110); do
+            sleep 30
+            pending=()
+            failed=()
+            passed=0
+            if ! runs="$(gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/check-runs?per_page=100" \
+              | jq -r '[.[].check_runs[]] | group_by(.name) | map(max_by(.id)) | .[]
+                  | [.name, .status, (.conclusion // "-"), (.details_url // "-")] | @tsv')"; then
+              echo "::error::Could not read the check runs for ${HEAD_SHA}."
+              exit 1
+            fi
+            if ! statuses="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/status" \
+              --jq '.statuses[] | [.context, .state] | @tsv')"; then
+              echo "::error::Could not read the commit statuses for ${HEAD_SHA}."
+              exit 1
+            fi
+            while IFS=$'\t' read -r name status conclusion url; do
+              [ -z "$name" ] && continue
+              ignored "$url" "$name" && continue
+              if [ "$status" != completed ]; then
+                codecov "$name" || pending+=("$name")
+              else
+                case "$conclusion" in
+                  success) passed=$((passed + 1)) ;;
+                  skipped | neutral) ;;
+                  *) failed+=("$name=$conclusion") ;;
+                esac
+              fi
+            done <<< "$runs"
+            while IFS=$'\t' read -r context state; do
+              [ -z "$context" ] && continue
+              case "$state" in
+                success) ;;
+                pending) codecov "$context" || pending+=("$context") ;;
+                *) failed+=("$context=$state") ;;
+              esac
+            done <<< "$statuses"
+
+            if [ "${#failed[@]}" -gt 0 ]; then
+              echo "::error::Not merging: ${failed[*]}"
+              exit 1
+            fi
+            if [ "${#pending[@]}" -gt 0 ]; then
+              settled=0
+              echo "Waiting for: ${pending[*]}"
+              continue
+            fi
+            if [ "$passed" -eq 0 ]; then
+              settled=0
+              if [ "$attempt" -ge 10 ]; then
+                echo "::error::Not merging: no check ran on ${HEAD_SHA}, so nothing has verified this update."
+                exit 1
+              fi
+              echo "Waiting for checks to start"
+              continue
+            fi
+            settled=$((settled + 1))
+            [ "$settled" -ge 2 ] || continue
+            break
+          done
+          if [ "$settled" -lt 2 ]; then
+            echo "::error::Not merging: checks were still running after the time limit."
+            exit 1
+          fi
+
+          state="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json state,headRefOid --jq '"\(.state) \(.headRefOid)"')"
+          if [ "$state" != "OPEN ${HEAD_SHA}" ]; then
+            echo "::notice::The pull request changed while waiting ($state); leaving it to the newer run."
+            exit 0
+          fi
+          gh pr merge "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --squash --auto --match-head-commit "$HEAD_SHA"
+          echo "::notice::Merged after $passed passing checks."
