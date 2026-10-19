@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2026.10.1] - 2026-10-19
+
 ### Changed
+
+- Updated dependency to `wattpilot-api>=1.5.1`.
 
 - Pull requests get path labels and at most one type label, `bug` or `enhancement`, from the shared tinkerologie PR labeler. Dependabot pull requests whose largest update is a patch or minor version merge automatically once the checks and commit statuses on their head commit have finished without a failure (a Codecov check that is still pending is not waited for; a Codecov failure blocks); majors, and pull requests with open review threads, stay for review.
 - Dependabot updates `uv.lock` (the `uv` ecosystem instead of `pip`), so version and security updates reach the lock file; `uv.lock` is refreshed to match `pyproject.toml`.
@@ -18,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tinkerologie-Bot's comment is now a readable "Pull request checklist": each problem is a numbered heading with plain-English guidance and its items listed underneath, and report updates for a pull request are serialised so an older run can never overwrite a newer one.
 - Contribution governance: issues without a `bug` or `enhancement` label are labeled automatically when their type can be determined (issues labeled `question`, `duplicate`, `invalid`, `wontfix`, or `no-type` are skipped), so CodeRabbit can plan them. Pull requests that conflict with the default branch are labeled, and their authors are notified in a comment. Stale issues and pull requests are labeled after 14 days without activity and closed 30 days later. PR governance now re-validates a human-authored, non-draft PR when a bot such as CodeRabbit edits its description, instead of skipping the check and reporting a pass, only maintainers with write access may use `None` instead of linking an issue, and a link to an issue that does not exist now fails the check.
 - Tinkerologie-Bot now posts one comment on pull requests that fail PR governance, listing every problem to fix, and updates it once they are fixed. PR governance runs from the default branch's workflow (`pull_request_target`), so a pull request cannot change its own check.
+
+### Fixed
+
+- **Handshake Connection Drop Resilience**: Updated `wattpilot-api` to `>=1.5.1`, resolving transport drops during initial authentication handshake being misclassified as authentication errors and breaking auto-reconnection ([tinkerologie/wattpilot-api#25](https://github.com/tinkerologie/wattpilot-api/issues/25)).
+- **Async Password Hash Caching**: Updated `wattpilot-api` to `>=1.5.1`, which offloads PBKDF2/bcrypt hashing to a worker thread and caches hashes, eliminating event loop stalls on connection/reconnection ([tinkerologie/wattpilot-api#26](https://github.com/tinkerologie/wattpilot-api/issues/26)).
 
 ## [2026.10.0] - 2026-10-08
 
