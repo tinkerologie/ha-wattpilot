@@ -7,15 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-
-- Updated dependency to `wattpilot-api>=1.5.1`.
-
-### Fixed
-
-- **Handshake Connection Drop Resilience**: Updated `wattpilot-api` to `>=1.5.1`, resolving transport drops during initial authentication handshake being misclassified as authentication errors and breaking auto-reconnection ([tinkerologie/wattpilot-api#25](https://github.com/tinkerologie/wattpilot-api/issues/25)).
-- **Async Password Hash Caching**: Updated `wattpilot-api` to `>=1.5.1`, which offloads PBKDF2/bcrypt hashing to a worker thread and caches hashes, eliminating event loop stalls on connection/reconnection ([tinkerologie/wattpilot-api#26](https://github.com/tinkerologie/wattpilot-api/issues/26)).
-
 ## [2026.10.1] - 2026-10-19
 
 ### Changed
