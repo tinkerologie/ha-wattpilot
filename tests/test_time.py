@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -224,7 +224,7 @@ class TestChargerTime:
             "custom_components.wattpilot.entities.GetChargerProp", return_value=25200
         ):
             time_entity = ChargerTime(hass, entry, desc, mock_charger)
-            expected = datetime.time(7, 0, 0)
+            expected = dt.time(7, 0, 0)
             time_entity._attr_native_value = expected
             assert time_entity.native_value == expected
 
@@ -250,7 +250,7 @@ class TestChargerTime:
             time_entity = ChargerTime(hass, entry, desc, mock_charger)
             # 25200 seconds = 7 hours = 07:00:00
             state = await time_entity._async_update_validate_platform_state(25200)
-            assert state == datetime.time(7, 0, 0)
+            assert state == dt.time(7, 0, 0)
 
     @pytest.mark.asyncio
     async def test_validate_platform_state_handles_various_times(
@@ -276,17 +276,17 @@ class TestChargerTime:
             # 0 seconds = midnight
             assert await time_entity._async_update_validate_platform_state(
                 0
-            ) == datetime.time(0, 0, 0)
+            ) == dt.time(0, 0, 0)
 
             # 3661 seconds = 1h 1m 1s
             assert await time_entity._async_update_validate_platform_state(
                 3661
-            ) == datetime.time(1, 1, 1)
+            ) == dt.time(1, 1, 1)
 
             # 86399 seconds = 23:59:59
             assert await time_entity._async_update_validate_platform_state(
                 86399
-            ) == datetime.time(23, 59, 59)
+            ) == dt.time(23, 59, 59)
 
     @pytest.mark.asyncio
     async def test_validate_platform_state_handles_none(
@@ -356,7 +356,7 @@ class TestChargerTime:
             time_entity = ChargerTime(hass, entry, desc, mock_charger)
             # 86400 + 3600 = 90000 -> 3600 = 01:00:00
             state = await time_entity._async_update_validate_platform_state(90000)
-            assert state == datetime.time(1, 0, 0)
+            assert state == dt.time(1, 0, 0)
 
     @pytest.mark.asyncio
     async def test_async_set_value_calls_set_next_trip(
@@ -379,7 +379,7 @@ class TestChargerTime:
             "custom_components.wattpilot.entities.GetChargerProp", return_value=25200
         ):
             time_entity = ChargerTime(hass, entry, desc, mock_charger)
-            new_time = datetime.time(8, 30, 0)
+            new_time = dt.time(8, 30, 0)
             await time_entity.async_set_value(new_time)
             mock_charger.set_next_trip.assert_called_once_with(new_time)
 
@@ -404,6 +404,6 @@ class TestChargerTime:
             "custom_components.wattpilot.entities.GetChargerProp", return_value=25200
         ):
             time_entity = ChargerTime(hass, entry, desc, mock_charger)
-            new_time = datetime.time(8, 30, 0)
+            new_time = dt.time(8, 30, 0)
             # Should not raise
             await time_entity.async_set_value(new_time)

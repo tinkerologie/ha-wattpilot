@@ -21,6 +21,7 @@ To maintain code quality, protect maintainer capacity, and prevent maintainer bu
 All contributions—whether submitted by humans or AI agents—must adhere to this step-by-step workflow:
 
 ### 1. Open a GitHub Issue First
+
 - Every bug fix, feature, or enhancement must start with an issue.
 - Use the appropriate GitHub Issue Form:
   - Bug Report (`01-bug-report.yml`)
@@ -28,6 +29,7 @@ All contributions—whether submitted by humans or AI agents—must adhere to th
 - Blank or unstructured issues are disabled. Pull requests without a corresponding issue will be closed.
 
 ### 2. CodeRabbit AI Plan Generation
+
 - Once the issue is created, CodeRabbit AI is triggered to generate an implementation plan (either automatically via the `bug` or `enhancement` label, or by commenting `@coderabbitai plan` on the issue).
 - CodeRabbit analyzes the codebase and posts a comprehensive Coding Plan containing:
   - Codebase research and affected components
@@ -37,18 +39,21 @@ All contributions—whether submitted by humans or AI agents—must adhere to th
 - Contributors must review, refine, and confirm the plan before writing code. Do not start implementation without an approved plan.
 
 ### 3. Create a Dedicated Branch
-- Create a feature or bugfix branch off `master`:
+
+- Create a feature or bugfix branch off `main`:
   - Features: `git checkout -b feat/<issue-number>-<short-description>`
   - Fixes: `git checkout -b fix/<issue-number>-<short-description>`
   - Documentation: `git checkout -b docs/<issue-number>-<short-description>`
-- Never commit directly to the default branch (`master`).
+- Never commit directly to the default branch (`main`).
 
 ### 4. Implementation and Local Validation
+
 - Implement changes following project conventions and the approved plan.
 - Update `CHANGELOG.md` under `## [Unreleased]` describing what changed and why.
 - Run all required local validation checks (tests with coverage, linters, type checkers, and formatters). Ensure all checks pass with zero errors and zero warnings.
 
 ### 5. Follow the Pull Request Template
+
 - Open a Pull Request using `.github/PULL_REQUEST_TEMPLATE.md`.
 - Complete all sections in the template:
   - Summary of changes
@@ -57,16 +62,20 @@ All contributions—whether submitted by humans or AI agents—must adhere to th
   - Mandatory Pre-Submission Governance checklist (every box must be checked)
 
 ### 6. Open PR as DRAFT First
+
 - Pull requests MUST be opened in Draft mode (`gh pr create --draft` or choose "Create draft pull request" in GitHub).
 - Draft PRs allow CI workflows to run in isolation without triggering premature reviewer notifications or consuming unnecessary review capacity.
 - Verify that all CI checks pass in draft mode and confirm that everything is working as expected from your end.
 
 ### 7. Mark Ready for Review
+
 - Only after all local and draft CI checks have succeeded, convert the pull request to "Ready for Review".
 - Pull requests marked ready for review with failing checks, incomplete templates, or unverified changes will be converted back to draft or closed.
 
 ### 8. Automated Quality Gates and Merge Criteria
+
 Before a pull request can be merged, it must satisfy all automated quality gates:
+
 - CodeRabbit AI Review: All review comments and suggestions must be resolved or addressed.
 - GitHub Copilot Code Review: Must pass with no blocking feedback.
 - Codecov Coverage Reports: Must pass with zero errors, zero warnings, and no coverage regressions below the repository target.
@@ -146,8 +155,8 @@ These rules apply to every contributor, including AI coding agents. The full org
 4. **Act on the Tinkerologie-Bot report.** When PR governance fails, Tinkerologie-Bot posts one comment
    listing every problem as a numbered item. Fix each item by editing the PR description or pushing
    the missing change; the check re-runs and the comment updates to passed.
-5. **Rebase before review.** Rebase on `master` before marking a PR ready for review.
-6. **Resolve conflicts first.** When a PR gets the `conflicts` label, rebase on `master`,
+5. **Rebase before review.** Rebase on `main` before marking a PR ready for review.
+6. **Resolve conflicts first.** When a PR gets the `conflicts` label, rebase on `main`,
    resolve the conflicts (keep every `CHANGELOG.md` entry under `[Unreleased]`), re-run the tests,
    and force-push before doing any other work.
 7. **Stale items.** Issues and PRs with no activity for 14 days are labeled `stale` and closed 30

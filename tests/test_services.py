@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -85,7 +85,7 @@ class TestSetNextTrip:
         ):
             await async_service_SetNextTrip(mock_hass, call)
 
-            expected_time = datetime.time(8, 30, 0)
+            expected_time = dt.time(8, 30, 0)
             mock_charger.set_next_trip.assert_called_once_with(expected_time)
 
     @pytest.mark.asyncio
@@ -132,9 +132,9 @@ class TestSetNextTrip:
     async def test_set_next_trip_time_parsing(self, mock_hass: HomeAssistant) -> None:
         """Test set next trip with various time formats."""
         test_cases = [
-            ("08:30:00", datetime.time(8, 30, 0)),
-            ("23:59:59", datetime.time(23, 59, 59)),
-            ("00:00:00", datetime.time(0, 0, 0)),
+            ("08:30:00", dt.time(8, 30, 0)),
+            ("23:59:59", dt.time(23, 59, 59)),
+            ("00:00:00", dt.time(0, 0, 0)),
         ]
 
         for time_str, expected_time in test_cases:
