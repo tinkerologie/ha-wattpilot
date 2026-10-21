@@ -1,8 +1,12 @@
 # Fronius Wattpilot Integration for Home Assistant
 
-[![HACS Integration](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/custom-components/hacs)
-[![GitHub Release](https://img.shields.io/github/release/ruaan-deysel/ha-wattpilot.svg)](https://github.com/tinkerologie/ha-wattpilot/releases)
-[![License](https://img.shields.io/github/license/ruaan-deysel/ha-wattpilot.svg)](LICENSE)
+<!-- BADGES:START -->
+[![Marketplace and HACS](https://img.shields.io/badge/Marketplace%20%7C%20HACS-Default-orange.svg)](https://www.hacs.xyz/docs/marketplace/)
+[![GitHub Last Commit](https://img.shields.io/github/last-commit/tinkerologie/ha-wattpilot)](https://github.com/tinkerologie/ha-wattpilot/commits/main)
+[![GitHub Release](https://img.shields.io/github/v/release/tinkerologie/ha-wattpilot)](https://github.com/tinkerologie/ha-wattpilot/releases)
+[![codecov](https://codecov.io/gh/tinkerologie/ha-wattpilot/graph/badge.svg)](https://codecov.io/gh/tinkerologie/ha-wattpilot)
+[![License](https://img.shields.io/github/license/tinkerologie/ha-wattpilot)](./LICENSE)
+<!-- BADGES:END -->
 
 Custom Home Assistant integration for monitoring and controlling Fronius Wattpilot EV chargers using a reverse-engineered WebSocket API.
 
