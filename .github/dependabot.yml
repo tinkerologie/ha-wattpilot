@@ -41,12 +41,13 @@ updates:
         update-types:
           - minor
           - patch
+    # Packages pytest-homeassistant-custom-component pins exactly (==). Bumping one on
+    # its own makes the lock unsatisfiable and fails the whole update run, so they
+    # move only when pytest-homeassistant-custom-component does (STANDARDS.md §6).
     ignore:
-      # pytest and pytest-asyncio are pinned (==) by pytest-homeassistant-custom-component.
-      # Letting Dependabot raise their floor independently produces an
-      # unsatisfiable lock; it must track whatever pthcc allows.
       - dependency-name: pytest
       - dependency-name: pytest-asyncio
+      - dependency-name: pytest-cov
     allow:
       - dependency-type: all
   - package-ecosystem: github-actions
