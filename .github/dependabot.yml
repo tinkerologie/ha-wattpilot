@@ -11,6 +11,7 @@ updates:
     schedule:
       interval: weekly
       day: monday
+      timezone: Australia/Brisbane
     open-pull-requests-limit: 10
     labels:
       - dependencies
@@ -29,6 +30,7 @@ updates:
     directory: /
     schedule:
       interval: daily
+      timezone: Australia/Brisbane
     open-pull-requests-limit: 10
     labels:
       - dependencies
@@ -55,6 +57,7 @@ updates:
     schedule:
       interval: weekly
       day: monday
+      timezone: Australia/Brisbane
     open-pull-requests-limit: 10
     labels:
       - dependencies

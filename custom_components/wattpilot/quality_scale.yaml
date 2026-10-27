@@ -1,4 +1,4 @@
-tier: silver
+tier: platinum
 
 rules:
   # Bronze
@@ -66,7 +66,7 @@ rules:
   # Silver
   action-exceptions:
     status: done
-    comment: Actions raise translated ServiceValidationError and HomeAssistantError.
+    comment: Actions and entity writes raise translated ServiceValidationError / HomeAssistantError (entities._async_write).
   config-entry-unloading:
     status: done
     comment: async_unload_entry unloads platforms and disconnects the charger.
@@ -103,11 +103,11 @@ rules:
     status: done
     comment: Full diagnostics with redacted sensitive data.
   discovery:
-    status: todo
-    comment: No mDNS/SSDP/DHCP discovery implemented.
+    status: done
+    comment: Zeroconf (_http._tcp, devicefamily=wattpilot); the TXT record carries the serial used as unique ID.
   discovery-update-info:
-    status: todo
-    comment: Depends on discovery.
+    status: done
+    comment: Discovery updates the IP address of a configured local charger and reloads it.
   docs-data-update:
     status: done
     comment: README.md explains the push-based websocket updates.
@@ -146,7 +146,7 @@ rules:
     comment: Translation keys in strings.json and translations/.
   exception-translations:
     status: done
-    comment: Setup, coordinator and action exceptions use translation keys.
+    comment: Setup, coordinator, action and entity-write exceptions use translation keys.
   icon-translations:
     status: done
     comment: Icons defined in icons.json for services and entities.
@@ -166,7 +166,7 @@ rules:
     comment: wattpilot-api is asyncio-based (websockets.asyncio).
   inject-websession:
     status: exempt
-    comment: wattpilot-api uses its own websocket connection, not aiohttp.
+    comment: wattpilot-api talks to the charger over the websockets library; it makes no aiohttp/httpx requests that could share a session.
   strict-typing:
-    status: todo
-    comment: mypy passes; the integration is not yet on the strict-typing allowlist.
+    status: done
+    comment: mypy --strict (pyproject.toml) passes in CI; wattpilot-api ships py.typed.

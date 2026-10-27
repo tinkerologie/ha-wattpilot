@@ -316,3 +316,118 @@ async def test_reauth_entry_without_connection_key(
 
     assert result["reason"] == "reauth_successful"
     assert entry.data["password"] == "new-secret"
+
+
+def _zeroconf(host: str = "192.168.1.100", serial: str = "12345678") -> Any:
+    from ipaddress import ip_address
+
+    from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
+
+    return ZeroconfServiceInfo(
+        ip_address=ip_address(host),
+        ip_addresses=[ip_address(host)],
+        port=80,
+        hostname=f"Wattpilot_{serial}.local.",
+        type="_http._tcp.local.",
+        name="Wattpilot._http._tcp.local.",
+        properties={
+            "devicefamily": "wattpilot",
+            "friendly_name": "Wattpilot",
+            "serial": serial,
+        },
+    )
+
+
+async def test_zeroconf_discovery_creates_entry(
+    hass: HomeAssistant, flow_connect: AsyncMock
+) -> None:
+    """A discovered charger only asks for its password."""
+    from homeassistant.config_entries import SOURCE_ZEROCONF
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_ZEROCONF}, data=_zeroconf()
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "zeroconf_confirm"
+    assert result["description_placeholders"] == {
+        "serial": "12345678",
+        "host": "192.168.1.100",
+    }
+
+    flow_connect.side_effect = AuthenticationError("bad")
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"friendly_name": "Garage", "password": "wrong"}
+    )
+    assert result["errors"] == {"base": "invalid_auth"}
+
+    flow_connect.side_effect = None
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"friendly_name": "Garage", "password": "secret"}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["result"].unique_id == "12345678"
+    assert result["data"]["ip_address"] == "192.168.1.100"
+    assert result["data"][CONF_CONNECTION] == CONF_LOCAL
+
+
+async def test_zeroconf_updates_address_of_configured_charger(
+    hass: HomeAssistant, config_entry: MockConfigEntry
+) -> None:
+    """A known charger that moved to a new address is updated and not re-added."""
+    from homeassistant.config_entries import SOURCE_ZEROCONF
+
+    config_entry.add_to_hass(hass)
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_ZEROCONF}, data=_zeroconf("192.168.1.42")
+    )
+
+    assert result["reason"] == "already_configured"
+    assert config_entry.data["ip_address"] == "192.168.1.42"
+
+
+async def test_zeroconf_leaves_cloud_entries_alone(hass: HomeAssistant) -> None:
+    """A charger configured through the cloud keeps its cloud settings."""
+    from homeassistant.config_entries import SOURCE_ZEROCONF
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="12345678",
+        data={**CLOUD_INPUT, CONF_CONNECTION: "cloud"},
+    )
+    entry.add_to_hass(hass)
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_ZEROCONF}, data=_zeroconf()
+    )
+
+    assert result["reason"] == "already_configured"
+    assert "ip_address" not in entry.data
+
+
+async def test_zeroconf_matches_legacy_entry_by_address(hass: HomeAssistant) -> None:
+    """An entry still keyed by IP address is not discovered again."""
+    from homeassistant.config_entries import SOURCE_ZEROCONF
+
+    MockConfigEntry(
+        domain=DOMAIN, unique_id="192.168.1.100", data=dict(ENTRY_DATA)
+    ).add_to_hass(hass)
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_ZEROCONF}, data=_zeroconf()
+    )
+
+    assert result["reason"] == "already_configured"
+
+
+@pytest.mark.parametrize(
+    ("host", "serial"), [("192.168.1.100", ""), ("fe80::1", "12345678")]
+)
+async def test_zeroconf_ignores_unusable_announcements(
+    hass: HomeAssistant, host: str, serial: str
+) -> None:
+    """Announcements without a serial or with only IPv6 are ignored."""
+    from homeassistant.config_entries import SOURCE_ZEROCONF
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_ZEROCONF}, data=_zeroconf(host, serial)
+    )
+
+    assert result["reason"] == "not_wattpilot"

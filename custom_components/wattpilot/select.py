@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any, Final, cast
 
 from homeassistant.components.select import SelectEntity
 from homeassistant.const import (
@@ -12,15 +12,16 @@ from homeassistant.const import (
     STATE_UNKNOWN,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ServiceValidationError
 
-from .const import DEFAULT_NAME
+from .const import DEFAULT_NAME, DOMAIN
 from .descriptions import (
     SELECT_DESCRIPTIONS,
     SOURCE_PROPERTY,
     WattpilotSelectEntityDescription,
 )
 from .entities import ChargerPlatformEntity, filter_descriptions
-from .utils import async_SetChargerProp, register_push_entity
+from .utils import register_push_entity
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -110,7 +111,7 @@ class ChargerSelect(ChargerPlatformEntity, SelectEntity):
                     self._opt_dict,
                 )
                 state = STATE_UNKNOWN
-            return state
+            return cast("str | None", state)
         except Exception as e:
             _LOGGER.error(
                 "%s - %s: _async_update_validate_platform_state failed: %s (%s.%s)",
@@ -124,39 +125,12 @@ class ChargerSelect(ChargerPlatformEntity, SelectEntity):
 
     async def async_select_option(self, option: str) -> None:
         """Async: Change the selected option."""
-        try:
-            if not isinstance(self._opt_dict, dict):
-                _LOGGER.error(
-                    "%s - %s: async_select_option: options dict not available",
-                    self._charger_id,
-                    self._identifier,
-                )
-                return
-            key = list(self._opt_dict.keys())[
-                list(self._opt_dict.values()).index(option)
-            ]
-            if key is None:
-                _LOGGER.error(
-                    "%s - %s: async_select_option: option %s not within options_id keys: %s",
-                    self._charger_id,
-                    self._identifier,
-                    option,
-                    self._opt_dict,
-                )
-                return
-            _LOGGER.debug(
-                "%s - %s: async_select_option: save option key %s",
-                self._charger_id,
-                self._identifier,
-                key,
+        options = self._opt_dict if isinstance(self._opt_dict, dict) else {}
+        key = next((k for k, label in options.items() if label == option), None)
+        if key is None:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="invalid_option",
+                translation_placeholders={"option": option},
             )
-            await async_SetChargerProp(self._charger, self._identifier, key)
-        except Exception as e:
-            _LOGGER.error(
-                "%s - %s: async_select_option failed: %s (%s.%s)",
-                self._charger_id,
-                self._identifier,
-                str(e),
-                e.__class__.__module__,
-                type(e).__name__,
-            )
+        await self._async_write(self._charger.set_property(self._identifier, key))

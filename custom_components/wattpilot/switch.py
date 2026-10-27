@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any, Final, cast
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.const import (
@@ -22,7 +22,7 @@ from .descriptions import (
     WattpilotSwitchEntityDescription,
 )
 from .entities import ChargerPlatformEntity, filter_descriptions
-from .utils import async_SetChargerProp, register_push_entity
+from .utils import register_push_entity
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -119,7 +119,7 @@ class ChargerSwitch(ChargerPlatformEntity, SwitchEntity):
                     STATE_ON,
                 )
                 state = STATE_ON
-            return state
+            return cast("str | None", state)
         except Exception:
             _LOGGER.exception(
                 "%s - %s: _async_update_validate_platform_state failed",
@@ -137,30 +137,14 @@ class ChargerSwitch(ChargerPlatformEntity, SwitchEntity):
 
     async def async_turn_on(self, **_: Any) -> None:
         """Async: Turn entity on."""
-        try:
-            _LOGGER.debug(
-                "%s - %s: async_turn_on",
-                self._charger_id,
-                self._identifier,
+        await self._async_write(
+            self._charger.set_property(
+                self._identifier, not self.entity_description.invert
             )
-            value = not self.entity_description.invert
-            await async_SetChargerProp(self._charger, self._identifier, value)
-        except Exception:
-            _LOGGER.exception(
-                "%s - %s: async_turn_on failed", self._charger_id, self._identifier
-            )
+        )
 
     async def async_turn_off(self, **_: Any) -> None:
         """Async: Turn entity off."""
-        try:
-            _LOGGER.debug(
-                "%s - %s: async_turn_off",
-                self._charger_id,
-                self._identifier,
-            )
-            value = self.entity_description.invert
-            await async_SetChargerProp(self._charger, self._identifier, value)
-        except Exception:
-            _LOGGER.exception(
-                "%s - %s: async_turn_off failed", self._charger_id, self._identifier
-            )
+        await self._async_write(
+            self._charger.set_property(self._identifier, self.entity_description.invert)
+        )

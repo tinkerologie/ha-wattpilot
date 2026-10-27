@@ -4,7 +4,8 @@
       "already_configured": "Diese Ladestation ist bereits konfiguriert.",
       "reauth_successful": "Die erneute Anmeldung war erfolgreich.",
       "reconfigure_successful": "Die Neukonfiguration war erfolgreich.",
-      "wrong_device": "Diese Einstellungen verbinden mit einer anderen Ladestation. Fügen Sie sie stattdessen als neue Ladestation hinzu."
+      "wrong_device": "Diese Einstellungen verbinden mit einer anderen Ladestation. Fügen Sie sie stattdessen als neue Ladestation hinzu.",
+      "not_wattpilot": "Das gefundene Gerät ist kein unterstützter Wattpilot."
     },
     "error": {
       "cannot_connect": "Verbindung zur Ladestation fehlgeschlagen. Bitte IP-Adresse und Passwort prüfen.",
@@ -80,8 +81,21 @@
         "data_description": {
           "password": "Das lokale API-Passwort (finden Sie in der Wattpilot App unter Einstellungen > WiFi > Passwort anzeigen oder auf dem Aufkleber der Ladestation)."
         }
+      },
+      "zeroconf_confirm": {
+        "title": "Wattpilot gefunden",
+        "description": "Wattpilot {serial} wurde unter {host} gefunden. Geben Sie das Passwort der Ladestation ein, um sie hinzuzufügen.",
+        "data": {
+          "friendly_name": "Name",
+          "password": "Passwort"
+        },
+        "data_description": {
+          "friendly_name": "Ein Anzeigename für Ihre Ladestation (z.B. 'Garagen-Ladestation').",
+          "password": "Das lokale API-Passwort (finden Sie in der Wattpilot App unter Einstellungen > WiFi > Passwort anzeigen oder auf dem Aufkleber der Ladestation)."
+        }
       }
-    }
+    },
+    "flow_title": "{name}"
   },
   "services": {
     "set_next_trip": {
@@ -386,6 +400,12 @@
     },
     "reconnect_failed": {
       "message": "Die Verbindung zu {entry} konnte nicht wiederhergestellt werden."
+    },
+    "write_failed": {
+      "message": "{entity} konnte auf der Ladestation nicht geändert werden: {error}"
+    },
+    "invalid_option": {
+      "message": "{option} ist keine gültige Option."
     }
   }
 }

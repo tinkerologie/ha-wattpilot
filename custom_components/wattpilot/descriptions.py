@@ -5,11 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from homeassistant.components.binary_sensor import (
+# The device classes moved to each component's const module after 2026.9; import
+# them from the package, which re-exports them on every supported release.
+from homeassistant.components.binary_sensor import (  # type: ignore[attr-defined]
     BinarySensorDeviceClass,
     BinarySensorEntityDescription,
 )
-from homeassistant.components.button import (
+from homeassistant.components.button import (  # type: ignore[attr-defined]
     ButtonDeviceClass,
     ButtonEntityDescription,
 )

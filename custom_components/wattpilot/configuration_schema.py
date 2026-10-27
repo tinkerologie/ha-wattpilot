@@ -74,6 +74,16 @@ def cloud_schema(
     )
 
 
+def discovery_schema(name: str) -> probatio.Schema:
+    """Schema for confirming a discovered charger."""
+    return probatio.Schema(
+        {
+            probatio.Required(CONF_FRIENDLY_NAME, default=name): TextSelector(),
+            probatio.Required(CONF_PASSWORD): _PASSWORD_SELECTOR,
+        }
+    )
+
+
 REAUTH_SCHEMA: Final = probatio.Schema(
     {probatio.Required(CONF_PASSWORD): _PASSWORD_SELECTOR}
 )

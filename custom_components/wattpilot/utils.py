@@ -161,44 +161,6 @@ def has_charger_prop(charger: Any, identifier: str | None = None) -> bool:
     return identifier in all_props
 
 
-async def async_SetChargerProp(
-    charger: Any,
-    identifier: str | None = None,
-    value: Any | None = None,
-) -> bool:
-    """
-    Async: set the value of a charger property.
-
-    Type coercion is handled automatically by wattpilot-api.
-    """
-    try:
-        if identifier is None:
-            _LOGGER.error(
-                "%s - async_SetChargerProp: property name has to be defined", DOMAIN
-            )
-            return False
-        if value is None:
-            _LOGGER.error(
-                "%s - async_SetChargerProp: A value parameter is required: %s=%s",
-                DOMAIN,
-                identifier,
-                value,
-            )
-            return False
-
-        _LOGGER.debug(
-            "%s - async_SetChargerProp: Send property update to charger: %s=%s",
-            DOMAIN,
-            identifier,
-            value,
-        )
-        await charger.set_property(identifier, value)
-    except Exception:
-        _LOGGER.exception("%s - async_SetChargerProp: Could not set property", DOMAIN)
-        return False
-    return True
-
-
 async def async_PrepareChargerApiDefinition(hass: HomeAssistant, charger: Any) -> None:
     """
     Async: load the charger's API definition cache in the executor.

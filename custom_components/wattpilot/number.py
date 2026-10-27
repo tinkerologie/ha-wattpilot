@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any, Final, cast
 
 from homeassistant.components.number import NumberEntity
 from homeassistant.components.number.const import UNIT_CONVERTERS
@@ -20,7 +20,7 @@ from .descriptions import (
     WattpilotNumberEntityDescription,
 )
 from .entities import ChargerPlatformEntity, filter_descriptions
-from .utils import async_SetChargerProp, register_push_entity
+from .utils import register_push_entity
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -125,7 +125,7 @@ class ChargerNumber(ChargerPlatformEntity, NumberEntity):
                 if scale is not None:
                     state = state * scale
                 self._attr_native_value = state
-            return state
+            return cast("float | None", state)
         except (TypeError, ValueError, IndexError) as e:
             _LOGGER.warning(
                 "%s - %s: _async_update_validate_platform_state failed to convert state to float: %s (%s)",
@@ -138,30 +138,19 @@ class ChargerNumber(ChargerPlatformEntity, NumberEntity):
 
     async def async_set_native_value(self, value: float) -> None:
         """Async: Change the current value."""
-        try:
-            _LOGGER.debug(
-                "%s - %s: async_set_native_value: value was changed to: %s",
-                self._charger_id,
-                self._identifier,
-                value,
-            )
-            if self._identifier == "fte":
-                await self._charger.set_next_trip_energy(value)
-            else:
-                scale = getattr(self.entity_description, "scale_factor", None)
-                if scale is not None and scale != 0:
-                    raw_val = value / scale
-                    if self.entity_description.set_type == "int":
-                        raw_val = round(raw_val)
-                    await async_SetChargerProp(self._charger, self._identifier, raw_val)
-                else:
-                    await async_SetChargerProp(self._charger, self._identifier, value)
-        except Exception as e:
-            _LOGGER.error(
-                "%s - %s: update failed: %s (%s.%s)",
-                self._charger_id,
-                self._identifier,
-                str(e),
-                e.__class__.__module__,
-                type(e).__name__,
-            )
+        _LOGGER.debug(
+            "%s - %s: async_set_native_value: %s",
+            self._charger_id,
+            self._identifier,
+            value,
+        )
+        if self._identifier == "fte":
+            await self._async_write(self._charger.set_next_trip_energy(value))
+            return
+        raw_val: float = value
+        scale = getattr(self.entity_description, "scale_factor", None)
+        if scale:
+            raw_val = value / scale
+            if self.entity_description.set_type == "int":
+                raw_val = round(raw_val)
+        await self._async_write(self._charger.set_property(self._identifier, raw_val))

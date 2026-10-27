@@ -13,7 +13,7 @@
 
 ## Project Overview
 
-This is a Home Assistant custom integration for Fronius Wattpilot EV chargers. It uses a reverse-engineered WebSocket API to communicate with the charger via local LAN or Fronius Cloud. The integration follows Home Assistant's Silver quality scale standards with DataUpdateCoordinator, comprehensive tests, and CI/CD.
+This is a Home Assistant custom integration for Fronius Wattpilot EV chargers. It uses a reverse-engineered WebSocket API to communicate with the charger via local LAN or Fronius Cloud. The integration meets the Home Assistant Integration Quality Scale Platinum tier (see `quality_scale.yaml`): zeroconf discovery, reconfigure/reauth flows, translated exceptions, `mypy --strict`, DataUpdateCoordinator, comprehensive tests, and CI/CD.
 
 ## Mandatory Development Workflow for AI Agents
 
@@ -36,7 +36,7 @@ All AI coding assistants (Claude Code, Gemini, GitHub Copilot, Cursor, Roo, Devi
 - `pytest` — Run unit and integration tests
 - `ruff check .` — Run ruff linter
 - `ruff format --check .` — Check code formatting
-- `mypy custom_components` — Static type checking
+- `mypy` — Strict static type checking (configured in `pyproject.toml`; must stay clean)
 - `pre-commit run --all-files` — Run all configured pre-commit hooks
 
 ### Testing
@@ -84,6 +84,11 @@ The project uses `uv` for dependency management with `pyproject.toml` as the sou
 - Menu (`local` / `cloud`), connection test before creating the entry, unique ID = charger serial
 - `async_step_reconfigure` replaces the old options flow; `async_step_reauth` handles password changes
 - Schemas use `probatio` (Home Assistant 2026.9+), not voluptuous
+- `async_step_zeroconf` discovers chargers (`_http._tcp`, TXT `devicefamily=wattpilot`, `serial`) and updates the IP of configured local chargers
+
+**Entity writes**
+
+- Platforms write through `ChargerPlatformEntity._async_write`, which raises a translated `HomeAssistantError` (`write_failed`) when the charger rejects a change; never swallow write errors
 
 **Data Flow**
 

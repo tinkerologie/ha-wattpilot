@@ -4,7 +4,8 @@
       "already_configured": "This charger is already configured.",
       "reauth_successful": "Reauthentication was successful.",
       "reconfigure_successful": "Reconfiguration was successful.",
-      "wrong_device": "These settings connect to a different charger. Add it as a new charger instead."
+      "wrong_device": "These settings connect to a different charger. Add it as a new charger instead.",
+      "not_wattpilot": "The discovered device is not a supported Wattpilot."
     },
     "error": {
       "cannot_connect": "Failed to connect to the charger. Please check the IP address and password.",
@@ -80,8 +81,21 @@
         "data_description": {
           "password": "The local API password (find it in the Wattpilot app under Settings > WiFi > Show Password or on the charger's sticker)."
         }
+      },
+      "zeroconf_confirm": {
+        "title": "Discovered Wattpilot",
+        "description": "Wattpilot {serial} was found at {host}. Enter the charger password to add it.",
+        "data": {
+          "friendly_name": "Name",
+          "password": "Password"
+        },
+        "data_description": {
+          "friendly_name": "A friendly name for your charger (e.g., 'Garage Charger').",
+          "password": "The local API password (find it in the Wattpilot app under Settings > WiFi > Show Password or on the charger's sticker)."
+        }
       }
-    }
+    },
+    "flow_title": "{name}"
   },
   "services": {
     "set_next_trip": {
@@ -397,6 +411,12 @@
     },
     "reconnect_failed": {
       "message": "Could not reconnect to {entry}."
+    },
+    "write_failed": {
+      "message": "Could not update {entity} on the charger: {error}"
+    },
+    "invalid_option": {
+      "message": "{option} is not a valid option."
     }
   }
 }

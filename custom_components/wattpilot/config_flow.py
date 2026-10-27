@@ -7,12 +7,31 @@ import logging
 from typing import TYPE_CHECKING, Any, Final
 
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult
-from homeassistant.const import CONF_FRIENDLY_NAME, CONF_IP_ADDRESS, CONF_PASSWORD
+from homeassistant.const import (
+    CONF_FRIENDLY_NAME,
+    CONF_IP_ADDRESS,
+    CONF_PASSWORD,
+    CONF_TIMEOUT,
+)
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 from wattpilot_api import AuthenticationError, WattpilotError
 
-from .configuration_schema import REAUTH_SCHEMA, cloud_schema, local_schema
-from .const import CONF_CLOUD, CONF_CONNECTION, CONF_LOCAL, CONF_SERIAL, DOMAIN
+from .configuration_schema import (
+    REAUTH_SCHEMA,
+    cloud_schema,
+    discovery_schema,
+    local_schema,
+)
+from .const import (
+    CONF_CLOUD,
+    CONF_CONNECTION,
+    CONF_LOCAL,
+    CONF_SERIAL,
+    DEFAULT_NAME,
+    DEFAULT_TIMEOUT,
+    DOMAIN,
+)
 from .utils import async_connect_new_charger, async_DisconnectCharger
 
 if TYPE_CHECKING:
@@ -34,6 +53,8 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
     """Config flow for a Wattpilot charger over the LAN or the Fronius cloud."""
 
     VERSION = 1
+
+    _discovered: dict[str, str]
 
     async def _async_try_connect(
         self, data: Mapping[str, Any]
@@ -64,6 +85,64 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         """Let the user pick a local or cloud connection."""
         return self.async_show_menu(
             step_id="user", menu_options=[CONF_LOCAL, CONF_CLOUD]
+        )
+
+    async def async_step_zeroconf(
+        self, discovery_info: ZeroconfServiceInfo
+    ) -> ConfigFlowResult:
+        """Handle a Wattpilot announcing itself over mDNS."""
+        serial = str(discovery_info.properties.get("serial") or "")
+        if not serial or not isinstance(
+            discovery_info.ip_address, ipaddress.IPv4Address
+        ):
+            return self.async_abort(reason="not_wattpilot")
+        host = str(discovery_info.ip_address)
+
+        await self.async_set_unique_id(serial)
+        entry = self.hass.config_entries.async_entry_for_domain_unique_id(
+            DOMAIN, serial
+        )
+        if (
+            entry is not None
+            and entry.data.get(CONF_CONNECTION, CONF_LOCAL) != CONF_LOCAL
+        ):
+            return self.async_abort(reason="already_configured")
+        # Keep the address of a configured local charger current (DHCP changes).
+        self._abort_if_unique_id_configured(updates={CONF_IP_ADDRESS: host})
+        # Entries created before 2026.10.2 may still be keyed by IP address.
+        self._async_abort_entries_match({CONF_IP_ADDRESS: host})
+
+        name = str(discovery_info.properties.get("friendly_name") or DEFAULT_NAME)
+        self._discovered = {"name": name, "host": host, "serial": serial}
+        self.context["title_placeholders"] = {"name": f"{name} ({serial})"}
+        return await self.async_step_zeroconf_confirm()
+
+    async def async_step_zeroconf_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask for the password of a discovered charger."""
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            data = {
+                CONF_FRIENDLY_NAME: user_input[CONF_FRIENDLY_NAME],
+                CONF_IP_ADDRESS: self._discovered["host"],
+                CONF_PASSWORD: user_input[CONF_PASSWORD],
+                CONF_TIMEOUT: DEFAULT_TIMEOUT,
+                CONF_CONNECTION: CONF_LOCAL,
+            }
+            _, errors = await self._async_try_connect(data)
+            if not errors:
+                return self.async_create_entry(
+                    title=data[CONF_FRIENDLY_NAME], data=data
+                )
+        return self.async_show_form(
+            step_id="zeroconf_confirm",
+            data_schema=discovery_schema(self._discovered["name"]),
+            errors=errors,
+            description_placeholders={
+                "serial": self._discovered["serial"],
+                "host": self._discovered["host"],
+            },
         )
 
     async def async_step_local(

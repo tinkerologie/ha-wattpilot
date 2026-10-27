@@ -22,7 +22,6 @@ from custom_components.wattpilot.utils import (
     async_DisconnectCharger,
     async_GetChargerProp,
     async_property_update_handler,
-    async_SetChargerProp,
     build_charger,
     has_charger_prop,
     register_push_entity,
@@ -272,41 +271,6 @@ class TestChargerPropertyAccess:
 
         result = await async_GetChargerProp(mock_charger, "test", "default")
         assert result == "default"
-
-
-class TestChargerPropertySetter:
-    """Test async_SetChargerProp function."""
-
-    @pytest.mark.asyncio
-    async def test_set_charger_prop_success(self, mock_charger: MagicMock) -> None:
-        """Test async_SetChargerProp sets property."""
-        result = await async_SetChargerProp(mock_charger, "frc", 1)
-        assert result is True
-        mock_charger.set_property.assert_called_once_with("frc", 1)
-
-    @pytest.mark.asyncio
-    async def test_set_charger_prop_none_identifier(
-        self, mock_charger: MagicMock
-    ) -> None:
-        """Test async_SetChargerProp with None identifier."""
-        result = await async_SetChargerProp(mock_charger, None, 1)
-        assert result is False
-        mock_charger.set_property.assert_not_called()
-
-    @pytest.mark.asyncio
-    async def test_set_charger_prop_none_value(self, mock_charger: MagicMock) -> None:
-        """Test async_SetChargerProp with None value."""
-        result = await async_SetChargerProp(mock_charger, "frc", None)
-        assert result is False
-        mock_charger.set_property.assert_not_called()
-
-    @pytest.mark.asyncio
-    async def test_set_charger_prop_exception(self, mock_charger: MagicMock) -> None:
-        """Test async_SetChargerProp handles exceptions."""
-        mock_charger.set_property = AsyncMock(side_effect=Exception("test"))
-
-        result = await async_SetChargerProp(mock_charger, "frc", 1)
-        assert result is False
 
 
 class TestChargerConnection:

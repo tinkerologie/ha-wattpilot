@@ -50,7 +50,9 @@ Fronius Wattpilot Home 11 J, Wattpilot Home 22 J and Wattpilot Flex. Entities th
 
 [![Add integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=wattpilot)
 
-Go to **Settings → Devices & services → Add integration → Fronius Wattpilot** and choose how to connect:
+Chargers on your network are **discovered automatically** (zeroconf): Home Assistant shows a _Discovered_ card, and you only enter the charger password. If the charger later gets a new IP address, discovery updates the integration for you.
+
+To add a charger manually, go to **Settings → Devices & services → Add integration → Fronius Wattpilot** and choose how to connect:
 
 | Field                      | Local network                                | Fronius cloud               |
 | -------------------------- | -------------------------------------------- | --------------------------- |
@@ -124,7 +126,7 @@ The charger keeps a websocket open to Home Assistant and pushes every property c
 | `wattpilot.disconnect_charger` | `device_id`                 | Closes the connection (entities become unavailable).                                           |
 | `wattpilot.reconnect_charger`  | `device_id`                 | Reconnects a disconnected charger.                                                             |
 
-Invalid input (for example an unknown device) raises a validation error in the UI; failures reported by the charger raise an error with the charger's message.
+Invalid input (for example an unknown device) raises a validation error in the UI; failures reported by the charger raise an error with the charger's message. The same applies to entities: if the charger rejects a switch, number, select, button or time change, Home Assistant shows an error instead of silently keeping the old value.
 
 ### Example: charge for the morning trip
 

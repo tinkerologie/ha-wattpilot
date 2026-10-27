@@ -12,5 +12,13 @@
   "issue_tracker": "https://github.com/tinkerologie/ha-wattpilot/issues",
   "loggers": ["wattpilot_api"],
   "requirements": ["wattpilot-api>=1.5.1", "packaging>=26.3"],
-  "version": "2026.10.2"
+  "version": "2026.10.2",
+  "zeroconf": [
+    {
+      "type": "_http._tcp.local.",
+      "properties": {
+        "devicefamily": "wattpilot"
+      }
+    }
+  ]
 }

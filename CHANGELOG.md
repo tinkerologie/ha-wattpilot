@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Reconfigure and reauthentication flows**: change the address or password from the integration menu; a rejected password now opens a reauthentication prompt instead of retrying forever.
 - **`set_goe_cloud` response**: the action returns the cloud API key and URL when enabling.
 - Brand icons are included in `brand/` for Home Assistant 2026.3+ and HACS.
+- **Zeroconf discovery**: chargers on the network are discovered (`_http._tcp`, `devicefamily=wattpilot`) and set up with just the password; a known charger's IP address is updated when it changes.
+- **Integration Quality Scale: Platinum** (`quality_scale.yaml`), with `mypy --strict` enforced in CI.
 
 ### Changed
 
@@ -25,13 +27,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Actions are registered once in `async_setup`, validate their input, and raise translated errors instead of only logging failures.
 - Schemas use `probatio`, the validation library of Home Assistant 2026.9+.
 - The configured connection timeout is passed to the charger client.
-- CI runs the tests, mypy and the frontend checks, and uploads Python and frontend coverage to Codecov.
+- CI runs the tests, strict mypy and the frontend checks, and uploads Python and frontend coverage to Codecov.
+- Scheduled workflows and Dependabot run on Australia/Brisbane time; the Validate workflow (HACS, version, quality scale) is enabled again.
 
 ### Fixed
 
 - **Blocking call on the event loop** ([#173](https://github.com/tinkerologie/ha-wattpilot/issues/173)): `wattpilot-api` loaded its API definition (`wattpilot.yaml`) on the first property write, which Home Assistant reported as blocking `import_module`, `open` and `read_text` calls. The definition is now loaded in the executor before connecting.
 - Removed the use of `DeviceEntry.config_entries`, which logs deprecation warnings from Home Assistant 2026.10.
 - Service calls for a charger that is not loaded no longer fail silently.
+- Switch, number, select, button and time changes that the charger rejects now raise a translated error instead of being logged and ignored.
 
 ### Removed
 
