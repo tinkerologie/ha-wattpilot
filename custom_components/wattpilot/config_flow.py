@@ -116,6 +116,12 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             if not errors:
                 if serial and self._is_other_charger(entry, serial):
                     return self.async_abort(reason="wrong_device")
+                if serial and serial != entry.unique_id:
+                    other = self.hass.config_entries.async_entry_for_domain_unique_id(
+                        DOMAIN, serial
+                    )
+                    if other is not None and other.entry_id != entry.entry_id:
+                        return self.async_abort(reason="already_configured")
                 return self.async_update_reload_and_abort(
                     entry,
                     unique_id=serial or entry.unique_id,

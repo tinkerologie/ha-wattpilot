@@ -279,3 +279,24 @@ async def test_reconfigure_legacy_entry_rejects_other_device(
 
     assert result["reason"] == "wrong_device"
     assert entry.unique_id == "192.168.1.100"
+
+
+async def test_reconfigure_legacy_entry_rejects_serial_of_other_entry(
+    hass: HomeAssistant, config_entry: MockConfigEntry, flow_connect: AsyncMock
+) -> None:
+    """A legacy entry cannot take over a charger that another entry manages."""
+    config_entry.add_to_hass(hass)
+    legacy = MockConfigEntry(
+        domain=DOMAIN,
+        title="Old",
+        unique_id="192.168.1.150",
+        data={**ENTRY_DATA, "ip_address": "192.168.1.150"},
+    )
+    legacy.add_to_hass(hass)
+    result = await legacy.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {**LOCAL_INPUT, "ip_address": "192.168.1.150"}
+    )
+
+    assert result["reason"] == "already_configured"
+    assert legacy.unique_id == "192.168.1.150"
