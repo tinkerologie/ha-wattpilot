@@ -43,6 +43,12 @@ dev = [
     "yamllint>=1.38.0",
 ]
 
+[tool.uv]
+# homeassistant 2026.10.x pins Pillow==12.3.0, which has open security advisories
+# fixed in 13.0.0 (Dependabot alerts #99-#131). Home Assistant dev already pins
+# 13.0.0; drop this override once the minimum homeassistant version ships it.
+override-dependencies = ["pillow>=13.0.0"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
