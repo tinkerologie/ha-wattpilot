@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2026.10.2] - 2026-10-27
+
+### Added
+
+- **Dashboard cards** ([#176](https://github.com/tinkerologie/ha-wattpilot/issues/176)): three Lit cards written in TypeScript 7 ship with the integration and register themselves (no manual resource step): `wattpilot-charger-card` (status, live power ring, session distance and energy, start/stop, solar/battery/grid flow, PV quick settings page, per-phase information), `wattpilot-mode-card` (Standard/Eco/Next trip, charging from the PV battery, charging speed, phase mode) and `wattpilot-next-trip-card` (departure time, trip energy, stay in Eco). Each card has a visual editor (`getConfigForm`), Sections-view sizing, a card-picker suggestion, English and German text, and theme, dark-mode, RTL, keyboard and screen-reader support.
+- **PV sensors**: PV power, grid power, PV battery power, PV battery state of charge and cable current limit, created when the charger reports them.
+- **Reconfigure and reauthentication flows**: change the address or password from the integration menu; a rejected password now opens a reauthentication prompt instead of retrying forever.
+- **`set_goe_cloud` response**: the action returns the cloud API key and URL when enabling.
+- Brand icons are included in `brand/` for Home Assistant 2026.3+ and HACS.
+
+### Changed
+
+- **Minimum Home Assistant version is now 2026.9.**
+- Setup tests the connection before creating an entry, uses the charger serial as unique ID, and starts with a local/cloud menu. Existing entries keep working unchanged.
+- The options flow is replaced by **Reconfigure** (Home Assistant 2026.12 rejects update listeners combined with reload helpers).
+- Actions are registered once in `async_setup`, validate their input, and raise translated errors instead of only logging failures.
+- Schemas use `probatio`, the validation library of Home Assistant 2026.9+.
+- The configured connection timeout is passed to the charger client.
+- CI runs the tests, mypy and the frontend checks, and uploads Python and frontend coverage to Codecov.
+
+### Fixed
+
+- **Blocking call on the event loop** ([#173](https://github.com/tinkerologie/ha-wattpilot/issues/173)): `wattpilot-api` loaded its API definition (`wattpilot.yaml`) on the first property write, which Home Assistant reported as blocking `import_module`, `open` and `read_text` calls. The definition is now loaded in the executor before connecting.
+- Removed the use of `DeviceEntry.config_entries`, which logs deprecation warnings from Home Assistant 2026.10.
+- Service calls for a charger that is not loaded no longer fail silently.
+
+### Removed
+
+- The options flow (use **Reconfigure**).
+
 ## [2026.10.1] - 2026-10-19
 
 ### Changed

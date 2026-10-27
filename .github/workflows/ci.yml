@@ -24,15 +24,138 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Python
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c97f06e356bcca1b426f396ef93ec35ce149ce7b # v10.2.0
         with:
-          python-version: '3.13'
+          version: 0.12.22
+          enable-cache: true
 
-      - name: Install ruff
-        run: pip install ruff
+      - name: Install dependencies
+        run: uv sync --locked --group dev --python 3.14.2
 
       - name: Run ruff format check
-        run: ruff format --check custom_components/wattpilot/*.py
+        run: uv run ruff format --check .
+
       - name: Run ruff lint
-        run: ruff check custom_components/wattpilot/*.py --output-format=github
+        run: uv run ruff check . --output-format=github
+
+      - name: Run mypy
+        run: uvx mypy --python-executable .venv/bin/python custom_components
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c97f06e356bcca1b426f396ef93ec35ce149ce7b # v10.2.0
+        with:
+          version: 0.12.22
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked --group dev --python 3.14.2
+
+      - name: Run tests and generate coverage report
+        run: uv run pytest --cov=custom_components/wattpilot --cov-branch --cov-report=xml
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-python
+          path: coverage.xml
+          if-no-files-found: error
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-frontend
+          path: frontend/coverage/lcov.info
+          if-no-files-found: error
+
+      - name: Build bundle
+        run: npm run build
+
+      - name: Committed bundle matches source
+        run: |
+          changes="$(git status --porcelain --untracked-files=all -- ../custom_components/wattpilot/frontend/)"
+          if [ -n "$changes" ]; then
+            echo "Committed frontend bundle is out of date; run 'npm run build' in frontend/ and commit it:"
+            echo "$changes"
+            git diff -- ../custom_components/wattpilot/frontend/
+            exit 1
+          fi
+
+  codecov:
+    name: Coverage
+    needs: [test, frontend]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # check out the repository
+      id-token: write # Codecov OIDC upload
+    env:
+      # OIDC is unavailable to fork and Dependabot PRs; those fall back to tokenless uploads.
+      CODECOV_OIDC: ${{ !(github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || github.event.pull_request.user.login == 'dependabot[bot]')) }}
+    steps:
+      # Checkout only provides the file list Codecov needs to map report paths; no PR code runs here.
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: coverage-*
+
+      - name: Upload Python coverage to Codecov
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        continue-on-error: ${{ env.CODECOV_OIDC != 'true' }}
+        with:
+          slug: ${{ github.repository }}
+          files: ./coverage-python/coverage.xml
+          flags: python
+          use_oidc: ${{ env.CODECOV_OIDC == 'true' }}
+          fail_ci_if_error: ${{ env.CODECOV_OIDC == 'true' }}
+
+      - name: Upload frontend coverage to Codecov
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        continue-on-error: ${{ env.CODECOV_OIDC != 'true' }}
+        with:
+          slug: ${{ github.repository }}
+          files: ./coverage-frontend/lcov.info
+          flags: frontend
+          use_oidc: ${{ env.CODECOV_OIDC == 'true' }}
+          fail_ci_if_error: ${{ env.CODECOV_OIDC == 'true' }}

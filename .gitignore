@@ -63,3 +63,7 @@ coverage.xml
 
 # Jupyter
 .ipynb_checkpoints/
+
+# Frontend (dashboard cards)
+frontend/node_modules/
+frontend/coverage/

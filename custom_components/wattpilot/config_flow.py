@@ -4,39 +4,23 @@ from __future__ import annotations
 
 import ipaddress
 import logging
-from typing import Any, Final
+from typing import TYPE_CHECKING, Any, Final
 
-from homeassistant import config_entries
-from homeassistant.components.diagnostics import async_redact_data
-from homeassistant.const import (
-    CONF_FRIENDLY_NAME,
-    CONF_IP_ADDRESS,
-    CONF_PASSWORD,
-)
-from homeassistant.core import callback
+from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.const import CONF_FRIENDLY_NAME, CONF_IP_ADDRESS, CONF_PASSWORD
+from wattpilot_api import AuthenticationError, WattpilotError
 
-from . import options_update_listener
-from .configuration_schema import (
-    CLOUD_SCHEMA,
-    CONNECTION_SCHEMA,
-    LOCAL_SCHEMA,
-    async_get_OPTIONS_CLOUD_SCHEMA,
-    async_get_OPTIONS_LOCAL_SCHEMA,
-)
-from .const import (
-    CONF_CLOUD,
-    CONF_CONNECTION,
-    CONF_LOCAL,
-    DEFAULT_NAME,
-    DOMAIN,
-)
+from .configuration_schema import REAUTH_SCHEMA, cloud_schema, local_schema
+from .const import CONF_CLOUD, CONF_CONNECTION, CONF_LOCAL, CONF_SERIAL, DOMAIN
+from .utils import async_connect_new_charger, async_DisconnectCharger
 
-REDACT_CONFIG = {CONF_PASSWORD}
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 _LOGGER: Final = logging.getLogger(__name__)
 
 
-def _validate_ip(value: str) -> bool:
+def _valid_ip(value: str) -> bool:
     """Return True if value is a valid IPv4/IPv6 address."""
     try:
         ipaddress.ip_address(value)
@@ -45,353 +29,127 @@ def _validate_ip(value: str) -> bool:
     return True
 
 
-class ConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
-    """Custom config flow."""
+class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
+    """Config flow for a Wattpilot charger over the LAN or the Fronius cloud."""
 
     VERSION = 1
-    data: dict[str, Any]
 
-    def __init__(self) -> None:
-        """Initialize."""
-        _LOGGER.debug("%s - ConfigFlowHandler: __init__", DOMAIN)
+    async def _async_try_connect(
+        self, data: Mapping[str, Any]
+    ) -> tuple[str | None, dict[str, str]]:
+        """Connect once with the given settings; return the serial or form errors."""
+        if data[CONF_CONNECTION] == CONF_LOCAL and not _valid_ip(
+            str(data.get(CONF_IP_ADDRESS, ""))
+        ):
+            return None, {CONF_IP_ADDRESS: "invalid_ip"}
+        try:
+            charger = await async_connect_new_charger(self.hass, data)
+        except AuthenticationError:
+            return None, {"base": "invalid_auth"}
+        except (WattpilotError, OSError, TimeoutError, ValueError) as err:
+            _LOGGER.debug("Cannot connect to Wattpilot: %s", err)
+            return None, {"base": "cannot_connect"}
+        except Exception:
+            _LOGGER.exception("Unexpected error connecting to Wattpilot")
+            return None, {"base": "unknown"}
+        serial = str(charger.serial) if getattr(charger, "serial", None) else None
+        await async_DisconnectCharger(self.flow_id, charger)
+        return serial, {}
 
     async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
-    ) -> config_entries.ConfigFlowResult:
-        """Invoked when a user initiates a flow via the user interface."""
-        _LOGGER.debug(
-            "%s - ConfigFlowHandler: async_step_user: %s",
-            DOMAIN,
-            async_redact_data(user_input, REDACT_CONFIG),
+        self,
+        user_input: dict[str, Any] | None = None,  # noqa: ARG002
+    ) -> ConfigFlowResult:
+        """Let the user pick a local or cloud connection."""
+        return self.async_show_menu(
+            step_id="user", menu_options=[CONF_LOCAL, CONF_CLOUD]
         )
-        try:
-            if not hasattr(self, "data"):
-                self.data = {}
-            return await self.async_step_connection()
-        except Exception as e:
-            _LOGGER.error(
-                "%s - ConfigFlowHandler: async_step_user failed: %s (%s.%s)",
-                DOMAIN,
-                str(e),
-                e.__class__.__module__,
-                type(e).__name__,
-            )
-            return self.async_abort(reason="exception")
-
-    async def async_step_connection(
-        self, user_input: dict[str, Any] | None = None
-    ) -> config_entries.ConfigFlowResult:
-        """Config flow to define a charger connection via user interface."""
-        _LOGGER.debug(
-            "%s - ConfigFlowHandler: async_step_connection: %s",
-            DOMAIN,
-            async_redact_data(user_input, REDACT_CONFIG),
-        )
-        try:
-            errors: dict[str, str] = {}
-            if user_input is not None:
-                _LOGGER.debug(
-                    "%s - ConfigFlowHandler: async_step_connection add user_input to data: %s",
-                    DOMAIN,
-                    async_redact_data(user_input, REDACT_CONFIG),
-                )
-                if user_input[CONF_CONNECTION] == CONF_LOCAL:
-                    return await self.async_step_local()
-                if user_input[CONF_CONNECTION] == CONF_CLOUD:
-                    return await self.async_step_cloud()
-            return self.async_show_form(
-                step_id=CONF_CONNECTION, data_schema=CONNECTION_SCHEMA, errors=errors
-            )
-        except Exception as e:
-            _LOGGER.error(
-                "%s - ConfigFlowHandler: async_step_connection failed: %s (%s.%s)",
-                DOMAIN,
-                str(e),
-                e.__class__.__module__,
-                type(e).__name__,
-            )
-            return self.async_abort(reason="exception")
 
     async def async_step_local(
         self, user_input: dict[str, Any] | None = None
-    ) -> config_entries.ConfigFlowResult:
-        """Config flow to define a local charger connection via user interface."""
-        _LOGGER.debug(
-            "%s - ConfigFlowHandler: async_step_local: %s",
-            DOMAIN,
-            async_redact_data(user_input, REDACT_CONFIG),
-        )
-        try:
-            errors: dict[str, str] = {}
-            if user_input is not None:
-                _LOGGER.debug(
-                    "%s - ConfigFlowHandler: async_step_local add user_input to data: %s",
-                    DOMAIN,
-                    async_redact_data(user_input, REDACT_CONFIG),
-                )
-                if not _validate_ip(user_input.get(CONF_IP_ADDRESS, "")):
-                    errors[CONF_IP_ADDRESS] = "invalid_ip"
-                    return self.async_show_form(
-                        step_id=CONF_LOCAL,
-                        data_schema=LOCAL_SCHEMA,
-                        errors=errors,
-                    )
-                user_input[CONF_CONNECTION] = CONF_LOCAL
-                self.data = user_input
-                return await self.async_step_final()
-            return self.async_show_form(
-                step_id=CONF_LOCAL, data_schema=LOCAL_SCHEMA, errors=errors
-            )
-        except Exception as e:
-            _LOGGER.error(
-                "%s - ConfigFlowHandler: async_step_local failed: %s (%s.%s)",
-                DOMAIN,
-                str(e),
-                e.__class__.__module__,
-                type(e).__name__,
-            )
-            return self.async_abort(reason="exception")
+    ) -> ConfigFlowResult:
+        """Configure a local connection."""
+        return await self._async_step_connection(CONF_LOCAL, user_input)
 
     async def async_step_cloud(
         self, user_input: dict[str, Any] | None = None
-    ) -> config_entries.ConfigFlowResult:
-        """Config flow to define a cloud charger connection via user interface."""
-        _LOGGER.debug(
-            "%s - ConfigFlowHandler: async_step_cloud: %s",
-            DOMAIN,
-            async_redact_data(user_input, REDACT_CONFIG),
-        )
-        try:
-            errors: dict[str, str] = {}
-            if user_input is not None:
-                _LOGGER.debug(
-                    "%s - ConfigFlowHandler: async_step_cloud add user_input to data: %s",
-                    DOMAIN,
-                    async_redact_data(user_input, REDACT_CONFIG),
-                )
-                user_input[CONF_CONNECTION] = CONF_CLOUD
-                self.data = user_input
-                return await self.async_step_final()
-            return self.async_show_form(
-                step_id=CONF_CLOUD, data_schema=CLOUD_SCHEMA, errors=errors
-            )
-        except Exception as e:
-            _LOGGER.error(
-                "%s - ConfigFlowHandler: async_step_cloud failed: %s (%s.%s)",
-                DOMAIN,
-                str(e),
-                e.__class__.__module__,
-                type(e).__name__,
-            )
-            return self.async_abort(reason="exception")
+    ) -> ConfigFlowResult:
+        """Configure a cloud connection."""
+        return await self._async_step_connection(CONF_CLOUD, user_input)
 
-    async def async_step_final(
+    async def _async_step_connection(
+        self, connection: str, user_input: dict[str, Any] | None
+    ) -> ConfigFlowResult:
+        schema = local_schema if connection == CONF_LOCAL else cloud_schema
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            data = {**user_input, CONF_CONNECTION: connection}
+            host_key = CONF_IP_ADDRESS if connection == CONF_LOCAL else CONF_SERIAL
+            self._async_abort_entries_match({host_key: data[host_key]})
+            serial, errors = await self._async_try_connect(data)
+            if not errors:
+                await self.async_set_unique_id(serial or data[host_key])
+                self._abort_if_unique_id_configured()
+                return self.async_create_entry(
+                    title=data[CONF_FRIENDLY_NAME], data=data
+                )
+        return self.async_show_form(
+            step_id=connection,
+            data_schema=self.add_suggested_values_to_schema(schema(), user_input),
+            errors=errors,
+        )
+
+    async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
-    ) -> config_entries.ConfigFlowResult:
-        """Complete the config flow and create the entry."""
-        _LOGGER.debug(
-            "%s - ConfigFlowHandler: async_step_final: %s",
-            DOMAIN,
-            async_redact_data(user_input, REDACT_CONFIG),
+    ) -> ConfigFlowResult:
+        """Change the connection settings of an existing charger."""
+        entry = self._get_reconfigure_entry()
+        connection = entry.data.get(CONF_CONNECTION, CONF_LOCAL)
+        schema = local_schema if connection == CONF_LOCAL else cloud_schema
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            data = {**entry.data, **user_input, CONF_CONNECTION: connection}
+            if not user_input.get(CONF_PASSWORD):
+                data[CONF_PASSWORD] = entry.data.get(CONF_PASSWORD)
+            serial, errors = await self._async_try_connect(data)
+            if not errors:
+                # Entries created before 2026.10.2 used the IP address as unique id.
+                if serial and entry.unique_id not in (
+                    serial,
+                    entry.data.get(CONF_IP_ADDRESS),
+                    entry.data.get(CONF_SERIAL),
+                ):
+                    return self.async_abort(reason="wrong_device")
+                return self.async_update_reload_and_abort(
+                    entry, title=data[CONF_FRIENDLY_NAME], data=data
+                )
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=schema(user_input or entry.data, password_required=False),
+            errors=errors,
         )
 
-        # Set unique_id based on IP address or friendly name to prevent duplicates
-        unique_id = self.data.get(CONF_IP_ADDRESS) or self.data.get(
-            CONF_FRIENDLY_NAME, DEFAULT_NAME
-        )
-        await self.async_set_unique_id(unique_id)
-        abort_result = self._abort_if_unique_id_configured()
-        if abort_result is not None:
-            return abort_result
+    async def async_step_reauth(
+        self,
+        entry_data: Mapping[str, Any],  # noqa: ARG002
+    ) -> ConfigFlowResult:
+        """Start reauthentication after the charger rejected the password."""
+        return await self.async_step_reauth_confirm()
 
-        title = self.data.get(
-            CONF_FRIENDLY_NAME, self.data.get(CONF_IP_ADDRESS, DEFAULT_NAME)
-        )
-        return self.async_create_entry(title=title, data=self.data)
-
-    @staticmethod
-    @callback
-    def async_get_options_flow(
-        config_entry: config_entries.ConfigEntry,  # noqa: ARG004
-    ) -> OptionsFlowHandler:
-        """Get the options flow handler."""
-        _LOGGER.debug("%s: ConfigFlowHandler - async_get_options_flow", DOMAIN)
-        return OptionsFlowHandler()
-
-
-class OptionsFlowHandler(config_entries.OptionsFlow):
-    """Handles options flow for the component."""
-
-    def __init__(self) -> None:
-        """Initialize options flow."""
-        _LOGGER.debug("%s - OptionsFlowHandler: __init__", DOMAIN)
-        self.data: dict[str, Any] = {}
-
-    async def async_step_init(
+    async def async_step_reauth_confirm(
         self, user_input: dict[str, Any] | None = None
-    ) -> config_entries.ConfigFlowResult:
-        """Manage the options for the custom component."""
-        _LOGGER.debug(
-            "%s - OptionsFlowHandler: async_step_init: %s", DOMAIN, user_input
+    ) -> ConfigFlowResult:
+        """Ask for the new charger password."""
+        entry = self._get_reauth_entry()
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            data = {**entry.data, CONF_PASSWORD: user_input[CONF_PASSWORD]}
+            _, errors = await self._async_try_connect(data)
+            if not errors:
+                return self.async_update_reload_and_abort(entry, data=data)
+        return self.async_show_form(
+            step_id="reauth_confirm",
+            data_schema=REAUTH_SCHEMA,
+            errors=errors,
+            description_placeholders={"name": entry.title},
         )
-        try:
-            if self.config_entry.source == config_entries.SOURCE_USER:
-                return await self.async_step_config_connection()
-            _LOGGER.warning(
-                "%s - OptionsFlowHandler: async_step_init: source not supported: %s",
-                DOMAIN,
-                self.config_entry.source,
-            )
-            return self.async_abort(reason="not_supported")
-        except Exception as e:
-            _LOGGER.error(
-                "%s - OptionsFlowHandler: async_step_init failed: %s (%s.%s)",
-                DOMAIN,
-                str(e),
-                e.__class__.__module__,
-                type(e).__name__,
-            )
-            return self.async_abort(reason="exception")
-
-    async def async_step_config_connection(
-        self, user_input: dict[str, Any] | None = None
-    ) -> config_entries.ConfigFlowResult:
-        """Handle connection type selection."""
-        _LOGGER.debug(
-            "%s - OptionsFlowHandler: async_step_config_connection: %s",
-            DOMAIN,
-            async_redact_data(user_input, REDACT_CONFIG),
-        )
-        try:
-            if not user_input:
-                return self.async_show_form(
-                    step_id="config_connection", data_schema=CONNECTION_SCHEMA
-                )
-            _LOGGER.debug(
-                "%s - OptionsFlowHandler: async_step_config_connection - user_input: %s",
-                DOMAIN,
-                async_redact_data(user_input, REDACT_CONFIG),
-            )
-            if user_input[CONF_CONNECTION] == CONF_LOCAL:
-                return await self.async_step_config_local()
-            if user_input[CONF_CONNECTION] == CONF_CLOUD:
-                return await self.async_step_config_cloud()
-            return self.async_abort(reason="invalid_connection")
-        except Exception as e:
-            _LOGGER.error(
-                "%s - OptionsFlowHandler: async_step_config_connection failed: %s (%s.%s)",
-                DOMAIN,
-                str(e),
-                e.__class__.__module__,
-                type(e).__name__,
-            )
-            return self.async_abort(reason="exception")
-
-    async def async_step_config_local(
-        self, user_input: dict[str, Any] | None = None
-    ) -> config_entries.ConfigFlowResult:
-        """Handle local connection configuration."""
-        _LOGGER.debug(
-            "%s - OptionsFlowHandler: async_step_config_local: %s",
-            DOMAIN,
-            async_redact_data(user_input, REDACT_CONFIG),
-        )
-        try:
-            options_local_schema = await async_get_OPTIONS_LOCAL_SCHEMA(
-                self.config_entry.data
-            )
-            if not user_input:
-                return self.async_show_form(
-                    step_id="config_local", data_schema=options_local_schema
-                )
-            _LOGGER.debug(
-                "%s - OptionsFlowHandler: async_step_config_local - user_input",
-                DOMAIN,
-            )
-            if not _validate_ip(user_input.get(CONF_IP_ADDRESS, "")):
-                return self.async_show_form(
-                    step_id="config_local",
-                    data_schema=options_local_schema,
-                    errors={CONF_IP_ADDRESS: "invalid_ip"},
-                )
-            user_input[CONF_CONNECTION] = CONF_LOCAL
-            self.data.update(user_input)
-            _LOGGER.debug(
-                "%s - OptionsFlowHandler: async_step_config_local complete: %s",
-                DOMAIN,
-                async_redact_data(user_input, REDACT_CONFIG),
-            )
-            return await self.async_step_final()
-        except Exception as e:
-            _LOGGER.error(
-                "%s - OptionsFlowHandler: async_step_config_local failed: %s (%s.%s)",
-                DOMAIN,
-                str(e),
-                e.__class__.__module__,
-                type(e).__name__,
-            )
-            return self.async_abort(reason="exception")
-
-    async def async_step_config_cloud(
-        self, user_input: dict[str, Any] | None = None
-    ) -> config_entries.ConfigFlowResult:
-        """Handle cloud connection configuration."""
-        _LOGGER.debug(
-            "%s - OptionsFlowHandler: async_step_config_cloud: %s",
-            DOMAIN,
-            async_redact_data(user_input, REDACT_CONFIG),
-        )
-        try:
-            options_cloud_schema = await async_get_OPTIONS_CLOUD_SCHEMA(
-                self.config_entry.data
-            )
-            if not user_input:
-                return self.async_show_form(
-                    step_id="config_cloud", data_schema=options_cloud_schema
-                )
-            _LOGGER.debug(
-                "%s - OptionsFlowHandler: async_step_config_cloud - user_input: %s",
-                DOMAIN,
-                async_redact_data(user_input, REDACT_CONFIG),
-            )
-            user_input[CONF_CONNECTION] = CONF_CLOUD
-            self.data.update(user_input)
-            _LOGGER.debug(
-                "%s - OptionsFlowHandler: async_step_config_cloud complete: %s",
-                DOMAIN,
-                async_redact_data(user_input, REDACT_CONFIG),
-            )
-            return await self.async_step_final()
-        except Exception as e:
-            _LOGGER.error(
-                "%s - OptionsFlowHandler: async_step_config_cloud failed: %s (%s.%s)",
-                DOMAIN,
-                str(e),
-                e.__class__.__module__,
-                type(e).__name__,
-            )
-            return self.async_abort(reason="exception")
-
-    async def async_step_final(self) -> config_entries.ConfigFlowResult:
-        """Complete the options flow."""
-        try:
-            _LOGGER.debug("%s - OptionsFlowHandler: async_step_final", DOMAIN)
-            title = self.data.get(
-                CONF_FRIENDLY_NAME, self.data.get(CONF_IP_ADDRESS, DEFAULT_NAME)
-            )
-            if self.config_entry.state is config_entries.ConfigEntryState.SETUP_ERROR:
-                _LOGGER.debug(
-                    "%s - OptionsFlowHandler: in errorstate - trigger execution of options_update_listener",
-                    DOMAIN,
-                )
-                await options_update_listener(self.hass, self.config_entry)
-            return self.async_create_entry(title=title, data=self.data)
-        except Exception as e:
-            _LOGGER.error(
-                "%s - OptionsFlowHandler: async_step_final failed: %s (%s.%s)",
-                DOMAIN,
-                str(e),
-                e.__class__.__module__,
-                type(e).__name__,
-            )
-            return self.async_abort(reason="exception")

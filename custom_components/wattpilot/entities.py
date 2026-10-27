@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any, Final, cast
 
 from homeassistant.const import STATE_UNKNOWN
 from homeassistant.core import HomeAssistant, callback
@@ -544,7 +544,7 @@ class ChargerPlatformEntity(CoordinatorEntity["WattpilotCoordinator"]):
 
     async def _async_update_validate_property(self, state: Any = None) -> Any | None:
         """Async: Validate the given state, set attributes if necessary and return new state."""
-        desc = self.entity_description
+        desc = cast("WattpilotDescriptionMixin", self.entity_description)
         try:
             if str(state).startswith("namespace"):
                 _LOGGER.debug(

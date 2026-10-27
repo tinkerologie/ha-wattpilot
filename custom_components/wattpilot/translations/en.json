@@ -2,9 +2,9 @@
   "config": {
     "abort": {
       "already_configured": "This charger is already configured.",
-      "single_instance_allowed": "Only a single configuration instance is allowed.",
-      "exception": "An unknown exception occurred during config flow - check log for details.",
-      "not_supported": "The current workflow is not supported yet. Please wait for version update."
+      "reauth_successful": "Reauthentication was successful.",
+      "reconfigure_successful": "Reconfiguration was successful.",
+      "wrong_device": "These settings connect to a different charger. Add it as a new charger instead."
     },
     "error": {
       "cannot_connect": "Failed to connect to the charger. Please check the IP address and password.",
@@ -14,17 +14,11 @@
     },
     "step": {
       "user": {
-        "title": "Wattpilot Setup",
-        "description": "Set up your Fronius Wattpilot EV charger. You will need the charger's IP address (for local connection) or serial number (for cloud connection) and the connection password."
-      },
-      "connection": {
-        "title": "Connection Type",
-        "description": "Select how to connect to your charger.",
-        "data": {
-          "connection": "Connection type"
-        },
-        "data_description": {
-          "connection": "Local connection uses the charger's IP address. Cloud connection uses the serial number."
+        "title": "Wattpilot",
+        "description": "Set up your Fronius Wattpilot EV charger. You will need the charger's IP address (for local connection) or serial number (for cloud connection) and the connection password.",
+        "menu_options": {
+          "local": "Local network (IP address)",
+          "cloud": "Fronius cloud (serial number)"
         }
       },
       "local": {
@@ -58,67 +52,33 @@
           "password": "The cloud connection password (find it in the Wattpilot app under Settings > Cloud or on the charger's sticker).",
           "timeout": "Timeout in seconds for connection and initialization (default: 30)."
         }
-      }
-    }
-  },
-  "options": {
-    "abort": {
-      "single_instance_allowed": "Only a single configuration instance is allowed.",
-      "exception": "An unknown exception occurred during options flow - check log for details.",
-      "not_supported": "The current workflow is not supported yet. Please wait for version update.",
-      "invalid_connection": "Invalid connection type selected."
-    },
-    "error": {
-      "cannot_connect": "Failed to connect to the charger. Please check the IP address and password.",
-      "invalid_auth": "Invalid authentication. Please check your password.",
-      "invalid_ip": "Invalid IP address. Please enter a valid IPv4 or IPv6 address.",
-      "unknown": "An unexpected error occurred."
-    },
-    "step": {
-      "init": {
-        "title": "Wattpilot Options",
-        "description": "Configure your Wattpilot charger options."
       },
-      "config_connection": {
-        "title": "Connection Type",
-        "description": "Select how to connect to your charger.",
-        "data": {
-          "connection": "Connection type"
-        },
-        "data_description": {
-          "connection": "Local connection uses the charger's IP address. Cloud connection uses the serial number."
-        }
-      },
-      "config_local": {
-        "title": "Local Connection Options",
-        "description": "Update the connection settings for your locally connected Wattpilot charger.",
+      "reconfigure": {
+        "title": "Reconfigure charger",
+        "description": "Update the connection settings. Leave the password empty to keep the current one.",
         "data": {
           "friendly_name": "Name",
           "ip_address": "IP address",
           "password": "Password",
-          "timeout": "Connection timeout"
+          "timeout": "Connection timeout",
+          "serial": "Serial number"
         },
         "data_description": {
           "friendly_name": "A friendly name for your charger (e.g., 'Garage Charger').",
-          "ip_address": "The local IP address of your Wattpilot (find it in your router or the Wattpilot app).",
-          "password": "The local API password (leave empty to keep current password).",
-          "timeout": "Timeout in seconds for connection and initialization (default: 30)."
+          "ip_address": "The local IP address of your Wattpilot (find it in your router or the Wattpilot app under Settings > WiFi).",
+          "password": "The local API password (find it in the Wattpilot app under Settings > WiFi > Show Password or on the charger's sticker).",
+          "timeout": "Timeout in seconds for connection and initialization (default: 30).",
+          "serial": "The serial number of your Wattpilot (found on the charger's label or in the app under Settings > Info)."
         }
       },
-      "config_cloud": {
-        "title": "Cloud Connection Options",
-        "description": "Update cloud connection settings for your Wattpilot charger.",
+      "reauth_confirm": {
+        "title": "Reauthenticate charger",
+        "description": "The charger {name} rejected the password. Enter the current password.",
         "data": {
-          "friendly_name": "Name",
-          "serial": "Serial number",
-          "password": "Password",
-          "timeout": "Connection timeout"
+          "password": "Password"
         },
         "data_description": {
-          "friendly_name": "A friendly name for your charger (for display only).",
-          "serial": "The serial number of your Wattpilot charger.",
-          "password": "The cloud connection password for your charger.",
-          "timeout": "Timeout in seconds for connection and initialization."
+          "password": "The local API password (find it in the Wattpilot app under Settings > WiFi > Show Password or on the charger's sticker)."
         }
       }
     }
@@ -257,6 +217,21 @@
       },
       "wifi_state": {
         "name": "WiFi State"
+      },
+      "pv_power": {
+        "name": "PV power"
+      },
+      "grid_power": {
+        "name": "Grid power"
+      },
+      "battery_power": {
+        "name": "PV battery power"
+      },
+      "battery_soc": {
+        "name": "PV battery state of charge"
+      },
+      "cable_current_limit": {
+        "name": "Cable current limit"
       }
     },
     "switch": {
@@ -282,7 +257,7 @@
         "name": "Load Balancing"
       },
       "led_energy_saving": {
-        "name": "LED EnergySaving"
+        "name": "LED Energy Saving"
       },
       "ground_check": {
         "name": "Ground Check"
@@ -311,19 +286,19 @@
         "name": "Max Price"
       },
       "boost_discharges_until": {
-        "name": "Boost discharges until"
+        "name": "Boost Discharges Until"
       },
       "pv_battery_threshold": {
-        "name": "PV Battery threshold"
+        "name": "PV Battery Threshold"
       },
       "min_charging_time": {
         "name": "Min Charging Time"
       },
       "ohmpilot_threshold": {
-        "name": "Ohmpilot threshold"
+        "name": "Ohmpilot Threshold"
       },
       "start_charging_at": {
-        "name": "Start Charging at"
+        "name": "Start Charging At"
       },
       "next_trip_charging": {
         "name": "Next Trip Charging"
@@ -335,7 +310,7 @@
         "name": "Phase Switch Interval"
       },
       "pv_battery_discharges_until": {
-        "name": "PV Battery discharges until"
+        "name": "PV Battery Discharges Until"
       },
       "three_phase_power_level": {
         "name": "Three Phase Power Level"
@@ -349,10 +324,10 @@
         "name": "Awattar Country"
       },
       "lock_level_selection": {
-        "name": "Lock level selection"
+        "name": "Lock Level Selection"
       },
       "boost_type": {
-        "name": "Boost type"
+        "name": "Boost Type"
       },
       "charging_mode": {
         "name": "Charging Mode"
@@ -364,7 +339,7 @@
         "name": "Daylight Saving"
       },
       "cable_unlock_select": {
-        "name": "Cable unlock"
+        "name": "Cable Unlock"
       }
     },
     "button": {
@@ -404,6 +379,24 @@
     },
     "entry_cannot_connect": {
       "message": "Cannot connect to charger {name} ({serial}): {error}"
+    },
+    "invalid_auth": {
+      "message": "The charger {name} rejected the password."
+    },
+    "device_not_found": {
+      "message": "Device {device_id} was not found."
+    },
+    "device_not_wattpilot": {
+      "message": "{device} is not a Wattpilot charger."
+    },
+    "entry_not_loaded": {
+      "message": "The charger {entry} is not loaded."
+    },
+    "service_failed": {
+      "message": "The {service} action failed: {error}"
+    },
+    "reconnect_failed": {
+      "message": "Could not reconnect to {entry}."
     }
   }
 }

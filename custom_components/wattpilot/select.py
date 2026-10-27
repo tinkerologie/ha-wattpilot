@@ -78,6 +78,7 @@ class ChargerSelect(ChargerPlatformEntity, SelectEntity):
     def _init_platform_specific(self) -> None:
         """Platform specific init actions."""
         desc = self.entity_description
+        self._opt_dict: dict[Any, str] | str
         if isinstance(desc.select_options, dict):
             self._opt_dict = desc.select_options
         elif desc.options_attribute is not None:

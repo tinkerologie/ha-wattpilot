@@ -73,10 +73,17 @@ The project uses `uv` for dependency management with `pyproject.toml` as the sou
 
 **Entry Point (`__init__.py`)**
 
-- `async_setup_entry`: Main setup flow - connects charger, creates coordinator, registers services, forwards to platforms
-- `async_unload_entry`: Cleanup - unloads platforms, disconnects charger, removes event handlers
-- Services are registered globally once across all config entries (tracked in `hass.data[DOMAIN]['services_registered']`)
+- `async_setup`: Registers the actions (`services.async_setup_services`) and the dashboard card bundle (`frontend.async_register_frontend`) once per Home Assistant instance
+- `async_setup_entry`: Connects the charger (`utils.async_connect_new_charger`), raises `ConfigEntryAuthFailed` on a rejected password and `ConfigEntryNotReady` on connection errors, creates the coordinator and forwards to platforms
+- `async_unload_entry`: Unloads platforms and disconnects the charger; the websocket callback is removed through `entry.async_on_unload`
 - Property update handler bridges WebSocket events to entity updates via `async_property_update_handler` (async function)
+- `utils.async_PrepareChargerApiDefinition` loads wattpilot-api's YAML definition in the executor before connecting, so property writes never block the event loop (#173)
+
+**Config Flow (`config_flow.py`)**
+
+- Menu (`local` / `cloud`), connection test before creating the entry, unique ID = charger serial
+- `async_step_reconfigure` replaces the old options flow; `async_step_reauth` handles password changes
+- Schemas use `probatio` (Home Assistant 2026.9+), not voluptuous
 
 **Data Flow**
 
@@ -98,8 +105,6 @@ Wattpilot WebSocket (push) → async_property_update_handler → Coordinator →
   - `coordinator`: WattpilotCoordinator instance
   - `push_entities`: Dict of entities receiving property updates
   - `params`: Connection configuration
-  - `options_update_listener`: Callback for config changes
-  - `property_updates_callback`: Callback for WebSocket events
 
 **Base Entity (`entities.py`)**
 
@@ -139,7 +144,7 @@ The `filter_descriptions()` helper filters entities by firmware version, device 
 
 ### External Wattpilot API Package
 
-The integration uses the external `wattpilot-api>=1.1.0` package (installed via `uv sync`). This package handles:
+The integration uses the external `wattpilot-api>=1.5.1` package (installed via `uv sync`). This package handles:
 
 - WebSocket connection management (local and cloud)
 - Property parsing and updates via `charger.all_properties` dict
@@ -201,7 +206,14 @@ The integration provides custom services defined in `services.py`:
 - `wattpilot.disconnect_charger`: Manually disconnect
 - `wattpilot.reconnect_charger`: Manually reconnect
 
-Services are registered once globally (not per config entry) and use `async_registerService` helper.
+Services are registered once in `async_setup` (quality scale `action-setup`), validate input with schemas, and raise translated `ServiceValidationError` / `HomeAssistantError`.
+
+## Dashboard Cards (`frontend/`)
+
+- TypeScript 7 + Lit 3, bundled by Vite into the committed `custom_components/wattpilot/frontend/wattpilot-cards.js`
+- `frontend.py` serves the bundle and registers it as a Lovelace resource (storage mode) or extra JS URL (YAML mode), versioned by integration version + content hash
+- Cards resolve entities by device and `translation_key` (`frontend/src/entities.ts`); keep those keys in sync with `descriptions.py`
+- Verify with `npm run typecheck`, `npm test` and `npm run build` in `frontend/`, and commit the rebuilt bundle
 
 ## Common Patterns
 

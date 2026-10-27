@@ -52,6 +52,7 @@ fixture-parentheses = false
 [lint.per-file-ignores]
 "tests/**/*.py" = [
     "S101",   # Use of assert detected (expected in tests)
+    "S105",   # Hardcoded password comparison (test fixtures)
     "S106",   # Hardcoded password (test fixtures)
     "S110",   # try-except-pass (acceptable in tests)
     "PLR2004", # Magic value comparison (common in tests)

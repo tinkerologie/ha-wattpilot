@@ -23,6 +23,8 @@ repos:
           - --skip="./.*,*.json,*.yaml"
           - --quiet-level=2
         exclude_types: [json]
+        # Generated card bundle and the German UI strings of the cards
+        exclude: ^(custom_components/wattpilot/frontend/|frontend/src/localize\.ts$)
 
 
   # Pre-commit hooks
@@ -34,8 +36,10 @@ repos:
       - id: check-json
         exclude: (.vscode|.devcontainer)
       - id: end-of-file-fixer
+        exclude: ^custom_components/wattpilot/frontend/
 
       - id: trailing-whitespace
+        exclude: ^custom_components/wattpilot/frontend/
 
       - id: check-yaml
         args:

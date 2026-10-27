@@ -7,7 +7,6 @@ from datetime import timedelta
 from typing import TYPE_CHECKING, Any, Final
 
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DOMAIN
@@ -134,19 +133,4 @@ class WattpilotCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 translation_domain=DOMAIN,
                 translation_key="update_failed",
                 translation_placeholders={"error": str(err)},
-            ) from err
-
-    async def async_config_entry_first_refresh(self) -> None:
-        """Perform first refresh and raise ConfigEntryNotReady on failure."""
-        try:
-            await super().async_config_entry_first_refresh()
-        except UpdateFailed as err:
-            raise ConfigEntryNotReady(
-                translation_domain=DOMAIN,
-                translation_key="entry_cannot_connect",
-                translation_placeholders={
-                    "name": self.charger_name,
-                    "serial": self.charger_serial,
-                    "error": str(err),
-                },
             ) from err
