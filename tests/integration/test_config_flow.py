@@ -431,3 +431,22 @@ async def test_zeroconf_ignores_unusable_announcements(
     )
 
     assert result["reason"] == "not_wattpilot"
+
+
+async def test_zeroconf_prefers_ipv4_from_dual_stack_announcement(
+    hass: HomeAssistant, flow_connect: AsyncMock
+) -> None:
+    """An IPv6 primary address falls back to the announced IPv4 address."""
+    from ipaddress import ip_address
+
+    from homeassistant.config_entries import SOURCE_ZEROCONF
+
+    info = _zeroconf()
+    info.ip_address = ip_address("fe80::1")
+    info.ip_addresses = [ip_address("fe80::1"), ip_address("192.168.1.77")]
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_ZEROCONF}, data=info
+    )
+
+    assert result["step_id"] == "zeroconf_confirm"
+    assert result["description_placeholders"]["host"] == "192.168.1.77"

@@ -66,7 +66,11 @@ rules:
   # Silver
   action-exceptions:
     status: done
-    comment: Actions and entity writes raise translated ServiceValidationError / HomeAssistantError (entities._async_write).
+    comment: >-
+      Actions and entity writes raise translated ServiceValidationError / HomeAssistantError
+      (entities._async_write) for every error wattpilot-api reports. The library does not
+      yet await the charger's setValue acknowledgement, so a rejection on the charger side
+      is only logged by the library.
   config-entry-unloading:
     status: done
     comment: async_unload_entry unloads platforms and disconnects the charger.

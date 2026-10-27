@@ -92,11 +92,18 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Handle a Wattpilot announcing itself over mDNS."""
         serial = str(discovery_info.properties.get("serial") or "")
-        if not serial or not isinstance(
-            discovery_info.ip_address, ipaddress.IPv4Address
-        ):
+        # The client connects over IPv4; dual-stack chargers may list IPv6 first.
+        ipv4 = next(
+            (
+                address
+                for address in (discovery_info.ip_address, *discovery_info.ip_addresses)
+                if isinstance(address, ipaddress.IPv4Address)
+            ),
+            None,
+        )
+        if not serial or ipv4 is None:
             return self.async_abort(reason="not_wattpilot")
-        host = str(discovery_info.ip_address)
+        host = str(ipv4)
 
         await self.async_set_unique_id(serial)
         entry = self.hass.config_entries.async_entry_for_domain_unique_id(
