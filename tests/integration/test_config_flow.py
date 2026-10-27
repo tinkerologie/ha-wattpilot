@@ -8,6 +8,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from homeassistant.config_entries import SOURCE_USER
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers import device_registry as dr
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 from wattpilot_api import AuthenticationError, WattpilotError
 
 from custom_components.wattpilot.const import CONF_CONNECTION, CONF_LOCAL, DOMAIN
@@ -18,7 +20,6 @@ if TYPE_CHECKING:
     from collections.abc import Generator
 
     from homeassistant.core import HomeAssistant
-    from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 LOCAL_INPUT: dict[str, Any] = {
     "friendly_name": "Garage",
@@ -241,3 +242,40 @@ async def test_reauth_updates_password(
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reauth_successful"
     assert config_entry.data["password"] == "new-secret"
+
+
+async def test_reconfigure_legacy_entry_migrates_unique_id(
+    hass: HomeAssistant, flow_connect: AsyncMock
+) -> None:
+    """An entry keyed by its IP address is re-keyed by the charger serial."""
+    entry = MockConfigEntry(
+        domain=DOMAIN, title="Garage", unique_id="192.168.1.100", data=dict(ENTRY_DATA)
+    )
+    entry.add_to_hass(hass)
+    result = await entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {**LOCAL_INPUT, "ip_address": "192.168.1.150"}
+    )
+
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.unique_id == "12345678"
+
+
+async def test_reconfigure_legacy_entry_rejects_other_device(
+    hass: HomeAssistant, flow_connect: AsyncMock
+) -> None:
+    """A legacy entry that owns a charger device cannot switch to another one."""
+    entry = MockConfigEntry(
+        domain=DOMAIN, title="Garage", unique_id="192.168.1.100", data=dict(ENTRY_DATA)
+    )
+    entry.add_to_hass(hass)
+    dr.async_get(hass).async_get_or_create(
+        config_entry_id=entry.entry_id, identifiers={(DOMAIN, "87654321")}
+    )
+    result = await entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {**LOCAL_INPUT, "ip_address": "192.168.1.150"}
+    )
+
+    assert result["reason"] == "wrong_device"
+    assert entry.unique_id == "192.168.1.100"

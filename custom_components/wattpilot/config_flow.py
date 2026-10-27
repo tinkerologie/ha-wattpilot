@@ -6,8 +6,9 @@ import ipaddress
 import logging
 from typing import TYPE_CHECKING, Any, Final
 
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_FRIENDLY_NAME, CONF_IP_ADDRESS, CONF_PASSWORD
+from homeassistant.helpers import device_registry as dr
 from wattpilot_api import AuthenticationError, WattpilotError
 
 from .configuration_schema import REAUTH_SCHEMA, cloud_schema, local_schema
@@ -113,20 +114,37 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                 data[CONF_PASSWORD] = entry.data.get(CONF_PASSWORD)
             serial, errors = await self._async_try_connect(data)
             if not errors:
-                # Entries created before 2026.10.2 used the IP address as unique id.
-                if serial and entry.unique_id not in (
-                    serial,
-                    entry.data.get(CONF_IP_ADDRESS),
-                    entry.data.get(CONF_SERIAL),
-                ):
+                if serial and self._is_other_charger(entry, serial):
                     return self.async_abort(reason="wrong_device")
                 return self.async_update_reload_and_abort(
-                    entry, title=data[CONF_FRIENDLY_NAME], data=data
+                    entry,
+                    unique_id=serial or entry.unique_id,
+                    title=data[CONF_FRIENDLY_NAME],
+                    data=data,
                 )
         return self.async_show_form(
             step_id="reconfigure",
             data_schema=schema(user_input or entry.data, password_required=False),
             errors=errors,
+        )
+
+    def _is_other_charger(self, entry: ConfigEntry, serial: str) -> bool:
+        """Return True if `serial` is not the charger this entry already manages."""
+        owned = {
+            identifier
+            for device in dr.async_entries_for_config_entry(
+                dr.async_get(self.hass), entry.entry_id
+            )
+            for domain, identifier in device.identifiers
+            if domain == DOMAIN
+        }
+        if owned:
+            return serial not in owned
+        # Entries created before 2026.10.2 used the IP address or name as unique id.
+        return entry.unique_id not in (
+            serial,
+            entry.data.get(CONF_IP_ADDRESS),
+            entry.data.get(CONF_FRIENDLY_NAME),
         )
 
     async def async_step_reauth(

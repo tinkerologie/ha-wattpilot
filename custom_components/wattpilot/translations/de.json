@@ -4,7 +4,7 @@
       "already_configured": "Diese Ladestation ist bereits konfiguriert.",
       "reauth_successful": "Die erneute Anmeldung war erfolgreich.",
       "reconfigure_successful": "Die Neukonfiguration war erfolgreich.",
-      "wrong_device": "Diese Einstellungen verbinden mit einer anderen Ladestation. Füge sie stattdessen als neue Ladestation hinzu."
+      "wrong_device": "Diese Einstellungen verbinden mit einer anderen Ladestation. Fügen Sie sie stattdessen als neue Ladestation hinzu."
     },
     "error": {
       "cannot_connect": "Verbindung zur Ladestation fehlgeschlagen. Bitte IP-Adresse und Passwort prüfen.",
@@ -34,7 +34,7 @@
           "friendly_name": "Ein Anzeigename für Ihre Ladestation (z.B. 'Garagen-Ladestation').",
           "ip_address": "Die lokale IP-Adresse Ihrer Wattpilot (finden Sie in Ihrem Router oder in der Wattpilot App unter Einstellungen > WiFi).",
           "password": "Das lokale API-Passwort (finden Sie in der Wattpilot App unter Einstellungen > WiFi > Passwort anzeigen oder auf dem Aufkleber der Ladestation).",
-          "timeout": "Timeout in Sekunden für Verbindung und Initialisierung (Standard: 30)."
+          "timeout": "Timeout in Sekunden für Verbindung und Initialisierung (Standard: 15)."
         }
       },
       "cloud": {
@@ -50,12 +50,12 @@
           "friendly_name": "Ein Anzeigename für Ihre Ladestation (z.B. 'Garagen-Ladestation').",
           "serial": "Die Seriennummer Ihrer Wattpilot (auf dem Etikett der Ladestation oder in der App unter Einstellungen > Info).",
           "password": "Das Cloud-Verbindungspasswort (finden Sie in der Wattpilot App unter Einstellungen > Cloud oder auf dem Aufkleber der Ladestation).",
-          "timeout": "Timeout in Sekunden für Verbindung und Initialisierung (Standard: 30)."
+          "timeout": "Timeout in Sekunden für Verbindung und Initialisierung (Standard: 15)."
         }
       },
       "reconfigure": {
         "title": "Ladestation neu konfigurieren",
-        "description": "Verbindungseinstellungen ändern. Passwort leer lassen, um das aktuelle beizubehalten.",
+        "description": "Verbindungseinstellungen ändern. Lassen Sie das Passwort leer, um das aktuelle beizubehalten.",
         "data": {
           "friendly_name": "Name",
           "ip_address": "IP-Adresse",
@@ -67,13 +67,13 @@
           "friendly_name": "Ein Anzeigename für Ihre Ladestation (z.B. 'Garagen-Ladestation').",
           "ip_address": "Die lokale IP-Adresse Ihrer Wattpilot (finden Sie in Ihrem Router oder in der Wattpilot App unter Einstellungen > WiFi).",
           "password": "Das lokale API-Passwort (finden Sie in der Wattpilot App unter Einstellungen > WiFi > Passwort anzeigen oder auf dem Aufkleber der Ladestation).",
-          "timeout": "Timeout in Sekunden für Verbindung und Initialisierung (Standard: 30).",
+          "timeout": "Timeout in Sekunden für Verbindung und Initialisierung (Standard: 15).",
           "serial": "Die Seriennummer Ihrer Wattpilot (auf dem Etikett der Ladestation oder in der App unter Einstellungen > Info)."
         }
       },
       "reauth_confirm": {
         "title": "Ladestation erneut anmelden",
-        "description": "Die Ladestation {name} hat das Passwort abgelehnt. Gib das aktuelle Passwort ein.",
+        "description": "Die Ladestation {name} hat das Passwort abgelehnt. Geben Sie das aktuelle Passwort ein.",
         "data": {
           "password": "Passwort"
         },

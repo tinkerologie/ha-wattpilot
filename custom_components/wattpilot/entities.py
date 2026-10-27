@@ -30,6 +30,8 @@ from .utils import (
 )
 
 if TYPE_CHECKING:
+    # Only referenced as a string in the CoordinatorEntity base class.
+    from .coordinator import WattpilotCoordinator  # noqa: F401
     from .types import WattpilotConfigEntry
 
 _LOGGER: Final = logging.getLogger(__name__)

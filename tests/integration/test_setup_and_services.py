@@ -15,6 +15,8 @@ from wattpilot_api import AuthenticationError, WattpilotError
 
 from custom_components.wattpilot.const import DOMAIN
 
+from .conftest import ENTRY_DATA
+
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
@@ -310,3 +312,27 @@ async def test_property_push_updates_coordinator(
     await on_change("amp", 12)
 
     assert config_entry.runtime_data.coordinator.data["amp"] == 12
+
+
+async def test_setup_migrates_legacy_unique_id(
+    hass: HomeAssistant, connect_charger: AsyncMock
+) -> None:
+    """Entries keyed by IP address are re-keyed by the charger serial on setup."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Garage",
+        unique_id="192.168.1.100",
+        data=dict(ENTRY_DATA),
+    )
+    other = MockConfigEntry(
+        domain=DOMAIN, title="Other", unique_id="192.168.1.200", data={}
+    )
+    await _setup(hass, entry)
+    assert entry.unique_id == "12345678"
+
+    # A second legacy entry for the same charger keeps its id and logs a warning.
+    other.add_to_hass(hass)
+    from custom_components.wattpilot import _async_migrate_unique_id
+
+    _async_migrate_unique_id(hass, other, "12345678")
+    assert other.unique_id == "192.168.1.200"

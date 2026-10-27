@@ -34,7 +34,7 @@
           "friendly_name": "A friendly name for your charger (e.g., 'Garage Charger').",
           "ip_address": "The local IP address of your Wattpilot (find it in your router or the Wattpilot app under Settings > WiFi).",
           "password": "The local API password (find it in the Wattpilot app under Settings > WiFi > Show Password or on the charger's sticker).",
-          "timeout": "Timeout in seconds for connection and initialization (default: 30)."
+          "timeout": "Timeout in seconds for connection and initialization (default: 15)."
         }
       },
       "cloud": {
@@ -50,7 +50,7 @@
           "friendly_name": "A friendly name for your charger (e.g., 'Garage Charger').",
           "serial": "The serial number of your Wattpilot (found on the charger's label or in the app under Settings > Info).",
           "password": "The cloud connection password (find it in the Wattpilot app under Settings > Cloud or on the charger's sticker).",
-          "timeout": "Timeout in seconds for connection and initialization (default: 30)."
+          "timeout": "Timeout in seconds for connection and initialization (default: 15)."
         }
       },
       "reconfigure": {
@@ -67,7 +67,7 @@
           "friendly_name": "A friendly name for your charger (e.g., 'Garage Charger').",
           "ip_address": "The local IP address of your Wattpilot (find it in your router or the Wattpilot app under Settings > WiFi).",
           "password": "The local API password (find it in the Wattpilot app under Settings > WiFi > Show Password or on the charger's sticker).",
-          "timeout": "Timeout in seconds for connection and initialization (default: 30).",
+          "timeout": "Timeout in seconds for connection and initialization (default: 15).",
           "serial": "The serial number of your Wattpilot (found on the charger's label or in the app under Settings > Info)."
         }
       },

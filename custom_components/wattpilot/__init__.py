@@ -6,6 +6,7 @@ import logging
 from typing import TYPE_CHECKING, Any, Final
 
 from homeassistant.const import CONF_FRIENDLY_NAME
+from homeassistant.core import callback
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
 from wattpilot_api import AuthenticationError
@@ -59,6 +60,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: WattpilotConfigEntry) ->
             },
         ) from err
 
+    _async_migrate_unique_id(hass, entry, getattr(charger, "serial", None))
+
     coordinator = WattpilotCoordinator(hass, charger, entry)
     try:
         await coordinator.async_config_entry_first_refresh()
@@ -83,6 +86,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: WattpilotConfigEntry) ->
         await async_DisconnectCharger(entry.entry_id, charger)
         raise
     return True
+
+
+@callback
+def _async_migrate_unique_id(
+    hass: HomeAssistant, entry: WattpilotConfigEntry, serial: str | None
+) -> None:
+    """Key entries created before 2026.10.2 (IP address or name) by the serial."""
+    if not serial or entry.unique_id == serial:
+        return
+    if hass.config_entries.async_entry_for_domain_unique_id(DOMAIN, serial):
+        _LOGGER.warning(
+            "%s: another entry already manages charger %s", entry.title, serial
+        )
+        return
+    hass.config_entries.async_update_entry(entry, unique_id=serial)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: WattpilotConfigEntry) -> bool:
