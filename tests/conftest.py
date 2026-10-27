@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from wattpilot_api import exceptions as _exceptions
 
 from .fixtures import get_charger_properties
 
@@ -16,7 +17,7 @@ if TYPE_CHECKING:
 # Conditional imports for constants (avoid import resolution issues in CI)
 CONF_FRIENDLY_NAME = "friendly_name"
 CONF_IP_ADDRESS = "ip_address"
-CONF_PASSWORD = "password"  # noqa: S105
+CONF_PASSWORD = "password"
 
 
 def _create_mock_wattpilot_api_module() -> MagicMock:
@@ -62,6 +63,12 @@ def _create_mock_wattpilot_api_module() -> MagicMock:
     mock_cable_lock.ALWAYS_LOCK = 2
     mock_module.CableLockMode = mock_cable_lock
 
+    # The library's real exception classes, so `except` clauses match no matter
+    # whether a module imported wattpilot_api before or after this mock.
+    mock_module.WattpilotError = _exceptions.WattpilotError
+    mock_module.AuthenticationError = _exceptions.AuthenticationError
+    mock_module.ConnectionError = _exceptions.ConnectionError
+
     # Set version
     mock_module.__version__ = "1.0.0"
 
@@ -87,7 +94,18 @@ def mock_hass() -> MagicMock:
     hass = MagicMock()
     hass.loop = MagicMock()
     hass.data = {}
-    hass.async_create_task = MagicMock(return_value=None)
+
+    def _create_task(target: Any, *args: Any, **kwargs: Any) -> None:
+        # The mock never runs scheduled work; close coroutines so none leak.
+        if hasattr(target, "close"):
+            target.close()
+
+    hass.async_create_task = MagicMock(side_effect=_create_task)
+
+    async def _executor_job(target: Any, *args: Any) -> Any:
+        return target(*args)
+
+    hass.async_add_executor_job = AsyncMock(side_effect=_executor_job)
 
     # Create a proper event bus mock
     bus = MagicMock()
@@ -174,6 +192,10 @@ def mock_charger() -> MagicMock:
     charger.set_mode = AsyncMock()
     charger.connect = AsyncMock()
     charger.disconnect = AsyncMock()
+
+    # Per-client API definition cache (warmed in the executor before connect)
+    charger._api_def_cache = None
+    charger._get_api_def = MagicMock(return_value={})
 
     # Mock on_property_change - returns an unsubscribe callable
     _unsub = MagicMock()

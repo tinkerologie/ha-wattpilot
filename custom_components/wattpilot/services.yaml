@@ -1,63 +1,45 @@
-# version: 2021.12.19
-# author: Martin Kraemer, mk.maddin@gmail.com
-# description: YAML configuration file - holding component services
-
 set_next_trip:
-  name: Set Next Trip
-  description: Set the time for the next trip used by next trip charging mode
   fields:
     device_id:
-      name: Charger
-      description: Charger device for which to apply change
-      example: 1625eec2e3f83829c2d52999ecdd2036
+      required: true
       selector:
         device:
-          integration: wattpilot
+          filter:
+            integration: wattpilot
     trigger_time:
-      name: NextTrip
-      description: Next trip time
-      example: 06:30:00
+      required: true
+      example: "06:30:00"
       selector:
         time:
 
 set_goe_cloud:
-  name: Set Go-E Cloud
-  description: Enable or disable the Go-E cloud access for wallbox
   fields:
     device_id:
-      name: Charger
-      description: Charger device for which to apply change
-      example: 1625eec2e3f83829c2d52999ecdd2036
+      required: true
       selector:
         device:
-          integration: wattpilot
+          filter:
+            integration: wattpilot
     cloud_api:
-      name: CloudAPI
-      description: Turn E-Cloud Api access ON or OFF
-      example: False
+      required: true
+      example: false
       selector:
         boolean:
 
 disconnect_charger:
-  name: Disconnect Charger
-  description: Disconnect an established charger connection (entities will be unavailable)
   fields:
     device_id:
-      name: Charger
-      description: Charger device for which to apply change
-      example: 1625eec2e3f83829c2d52999ecdd2036
+      required: true
       selector:
         device:
-          integration: wattpilot
+          filter:
+            integration: wattpilot
 
 reconnect_charger:
-  name: Reconnect Charger
-  description: Reconnect a disconnected charger connection
   fields:
     device_id:
-      name: Charger
-      description: Charger device for which to apply change
-      example: 1625eec2e3f83829c2d52999ecdd2036
+      required: true
       selector:
         device:
-          integration: wattpilot
+          filter:
+            integration: wattpilot

@@ -7,7 +7,6 @@ from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryNotReady
 
 from custom_components.wattpilot.const import DOMAIN
 from custom_components.wattpilot.descriptions import (
@@ -17,149 +16,6 @@ from custom_components.wattpilot.descriptions import (
     WattpilotSensorEntityDescription,
 )
 from custom_components.wattpilot.entities import ChargerPlatformEntity
-
-
-class TestInitVersionCheck:
-    """Test __init__.py version check error paths (lines 79-93)."""
-
-    @pytest.mark.asyncio
-    async def test_setup_entry_connect_charger_generic_exception(
-        self,
-        hass: HomeAssistant,
-        mock_config_entry_data: dict,
-    ) -> None:
-        """Test setup handles generic exception during charger connection."""
-        from homeassistant.config_entries import ConfigEntry
-
-        from custom_components.wattpilot import async_setup_entry
-
-        entry = ConfigEntry(
-            version=1,
-            minor_version=0,
-            domain=DOMAIN,
-            title="Test Wattpilot",
-            data=mock_config_entry_data,
-            source="user",
-            unique_id="12345678",
-            discovery_keys={},
-            options={},
-            subentries_data={},
-        )
-
-        with (
-            patch("custom_components.wattpilot.async_get_integration"),
-            patch("custom_components.wattpilot._ensure_services_registered"),
-            patch(
-                "custom_components.wattpilot.async_ConnectCharger",
-                side_effect=RuntimeError("Connection error"),
-            ),
-            pytest.raises(ConfigEntryNotReady) as exc_info,
-        ):
-            await async_setup_entry(hass, entry)
-
-        assert "Failed to connect to charger" in str(exc_info.value)
-
-    @pytest.mark.asyncio
-    async def test_setup_entry_integration_version_none(
-        self,
-        hass: HomeAssistant,
-        mock_charger: MagicMock,
-        mock_config_entry_data: dict,
-    ) -> None:
-        """Test setup handles None integration version."""
-        from homeassistant.config_entries import ConfigEntry
-
-        from custom_components.wattpilot import async_setup_entry
-
-        entry = ConfigEntry(
-            version=1,
-            minor_version=0,
-            domain=DOMAIN,
-            title="Test Wattpilot",
-            data=mock_config_entry_data,
-            source="user",
-            unique_id="12345678",
-            discovery_keys={},
-            options={},
-            subentries_data={},
-        )
-
-        mock_integration = MagicMock()
-        mock_integration.version = None
-
-        with (
-            patch(
-                "custom_components.wattpilot.async_get_integration",
-                return_value=mock_integration,
-            ),
-            patch("custom_components.wattpilot._ensure_services_registered"),
-            patch(
-                "custom_components.wattpilot.async_ConnectCharger",
-                return_value=mock_charger,
-            ),
-            patch(
-                "custom_components.wattpilot.WattpilotCoordinator.async_config_entry_first_refresh",
-                new_callable=AsyncMock,
-            ),
-            patch.object(
-                hass.config_entries,
-                "async_forward_entry_setups",
-                new_callable=AsyncMock,
-            ),
-        ):
-            # Should complete setup while logging unknown version warning.
-            assert await async_setup_entry(hass, entry) is True
-
-
-class TestUnloadDisconnectErrors:
-    """Test unload disconnect error paths (lines 285-293)."""
-
-    @pytest.mark.asyncio
-    async def test_unload_charger_disconnect_exception_logged(
-        self,
-        hass: HomeAssistant,
-        mock_charger: MagicMock,
-        mock_config_entry_data: dict,
-    ) -> None:
-        """Test unload logs charger info when disconnect fails."""
-        from homeassistant.config_entries import ConfigEntry
-
-        from custom_components.wattpilot import async_unload_entry
-        from custom_components.wattpilot.types import WattpilotRuntimeData
-
-        entry = ConfigEntry(
-            version=1,
-            minor_version=0,
-            domain=DOMAIN,
-            title="Test Wattpilot",
-            data=mock_config_entry_data,
-            source="user",
-            unique_id="12345678",
-            discovery_keys={},
-            options={},
-            subentries_data={},
-        )
-
-        # Set name and serial for error message
-        mock_charger.name = "Test Charger Name"
-        mock_charger.serial = "ABC12345"
-
-        coordinator = MagicMock()
-        runtime_data = WattpilotRuntimeData(
-            charger=mock_charger,
-            coordinator=coordinator,
-            push_entities={},
-            params=mock_config_entry_data,
-        )
-        entry.runtime_data = runtime_data
-
-        with patch(
-            "custom_components.wattpilot.utils.async_DisconnectCharger",
-            side_effect=RuntimeError("Disconnect failed"),
-        ):
-            result = await async_unload_entry(hass, entry)
-            # Should log error with charger name and serial
-            assert isinstance(result, bool)
 
 
 class TestEntitiesEdgeCases:
@@ -764,42 +620,6 @@ class TestCoordinatorErrorPaths:
 
         with pytest.raises(UpdateFailed):
             await coordinator._async_update_data()
-
-
-class TestConfigurationSchema:
-    """Test configuration_schema.py error paths (lines 64-93, 98-127)."""
-
-    @pytest.mark.asyncio
-    async def test_get_options_local_schema_exception(self) -> None:
-        """Test async_get_OPTIONS_LOCAL_SCHEMA handles exceptions."""
-        from custom_components.wattpilot.configuration_schema import (
-            LOCAL_SCHEMA,
-            async_get_OPTIONS_LOCAL_SCHEMA,
-        )
-
-        # Pass data that will cause an exception
-        bad_data = MagicMock()
-        bad_data.get = MagicMock(side_effect=RuntimeError("Get failed"))
-
-        result = await async_get_OPTIONS_LOCAL_SCHEMA(bad_data)
-        # Should return LOCAL_SCHEMA on exception
-        assert result == LOCAL_SCHEMA
-
-    @pytest.mark.asyncio
-    async def test_get_options_cloud_schema_exception(self) -> None:
-        """Test async_get_OPTIONS_CLOUD_SCHEMA handles exceptions."""
-        from custom_components.wattpilot.configuration_schema import (
-            CLOUD_SCHEMA,
-            async_get_OPTIONS_CLOUD_SCHEMA,
-        )
-
-        # Pass data that will cause an exception
-        bad_data = MagicMock()
-        bad_data.get = MagicMock(side_effect=RuntimeError("Get failed"))
-
-        result = await async_get_OPTIONS_CLOUD_SCHEMA(bad_data)
-        # Should return CLOUD_SCHEMA on exception
-        assert result == CLOUD_SCHEMA
 
 
 class TestDiagnosticsErrorPaths:

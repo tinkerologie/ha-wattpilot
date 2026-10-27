@@ -5,11 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from homeassistant.components.binary_sensor import (
+# The device classes moved to each component's const module after 2026.9; import
+# them from the package, which re-exports them on every supported release.
+from homeassistant.components.binary_sensor import (  # type: ignore[attr-defined]
     BinarySensorDeviceClass,
     BinarySensorEntityDescription,
 )
-from homeassistant.components.button import (
+from homeassistant.components.button import (  # type: ignore[attr-defined]
     ButtonDeviceClass,
     ButtonEntityDescription,
 )
@@ -508,6 +510,56 @@ SENSOR_DESCRIPTIONS: list[WattpilotSensorEntityDescription] = [
             10: "No Shield",
         },
         description_text="WiFi status",
+    ),
+    # --- Live PV system readings (present when the charger is linked to an inverter) ---
+    WattpilotSensorEntityDescription(
+        key="pv_power",
+        charger_key="fbuf_pPv",
+        translation_key="pv_power",
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement="W",
+        suggested_display_precision=0,
+        description_text="PV production reported to the charger by the inverter",
+    ),
+    WattpilotSensorEntityDescription(
+        key="grid_power",
+        charger_key="fbuf_pGrid",
+        translation_key="grid_power",
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement="W",
+        suggested_display_precision=0,
+        description_text="Grid power reported to the charger by the inverter (negative values are export)",
+    ),
+    WattpilotSensorEntityDescription(
+        key="battery_power",
+        charger_key="fbuf_pAkku",
+        translation_key="battery_power",
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement="W",
+        suggested_display_precision=0,
+        description_text="PV battery power reported to the charger by the inverter, with the sign the inverter uses",
+    ),
+    WattpilotSensorEntityDescription(
+        key="battery_soc",
+        charger_key="fbuf_akkuSOC",
+        translation_key="battery_soc",
+        device_class=SensorDeviceClass.BATTERY,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement="%",
+        suggested_display_precision=1,
+        description_text="State of charge of the PV battery",
+    ),
+    WattpilotSensorEntityDescription(
+        key="cable_current_limit",
+        charger_key="cbl",
+        translation_key="cable_current_limit",
+        device_class=SensorDeviceClass.CURRENT,
+        native_unit_of_measurement="A",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        description_text="Current limit of the connected charging cable",
     ),
 ]
 

@@ -1,0 +1,27 @@
+{
+  "name": "wattpilot-dashboard-cards",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Lovelace dashboard cards for the Fronius Wattpilot Home Assistant integration",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --coverage",
+    "check:bundle": "vite build && git diff --exit-code -- ../custom_components/wattpilot/frontend/"
+  },
+  "dependencies": {
+    "@mdi/js": "7.4.47",
+    "lit": "3.3.3"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "5.0.5",
+    "jsdom": "30.1.3",
+    "typescript": "7.0.2",
+    "vite": "8.3.4",
+    "vitest": "5.0.5"
+  }
+}

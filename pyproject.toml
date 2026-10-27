@@ -7,7 +7,7 @@ packages = ["custom_components/wattpilot"]
 
 [project]
 name = "ha-wattpilot"
-version = "0.5.0"
+version = "2026.10.2"
 description = "Home Assistant integration for Fronius Wattpilot EV chargers"
 readme = "README.md"
 license = "Apache-2.0"
@@ -20,7 +20,7 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-    "wattpilot-api>=1.5.1",
+    "wattpilot-api>=1.6.0",
     "packaging>=26.3",
 ]
 
@@ -78,3 +78,8 @@ fail_under = 90
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S106", "ARG002", "F841", "B017"]
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+files = ["custom_components/wattpilot"]

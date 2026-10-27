@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any, Final, cast
 
 from homeassistant.const import STATE_UNKNOWN
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from packaging.version import InvalidVersion, Version
@@ -30,6 +31,10 @@ from .utils import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable
+
+    # Only referenced as a string in the CoordinatorEntity base class.
+    from .coordinator import WattpilotCoordinator  # noqa: F401
     from .types import WattpilotConfigEntry
 
 _LOGGER: Final = logging.getLogger(__name__)
@@ -330,6 +335,20 @@ class ChargerPlatformEntity(CoordinatorEntity["WattpilotCoordinator"]):
             )
             return
 
+    async def _async_write(self, action: Awaitable[Any]) -> None:
+        """Await a charger write and surface failures to the user."""
+        try:
+            await action
+        except Exception as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="write_failed",
+                translation_placeholders={
+                    "entity": self.entity_id or self._identifier,
+                    "error": str(err) or type(err).__name__,
+                },
+            ) from err
+
     def _init_platform_specific(self) -> None:
         """Platform specific init actions."""
 
@@ -544,7 +563,7 @@ class ChargerPlatformEntity(CoordinatorEntity["WattpilotCoordinator"]):
 
     async def _async_update_validate_property(self, state: Any = None) -> Any | None:
         """Async: Validate the given state, set attributes if necessary and return new state."""
-        desc = self.entity_description
+        desc = cast("WattpilotDescriptionMixin", self.entity_description)
         try:
             if str(state).startswith("namespace"):
                 _LOGGER.debug(

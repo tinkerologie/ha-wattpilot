@@ -1,14 +1,24 @@
 {
   "domain": "wattpilot",
   "name": "Fronius Wattpilot",
-  "version": "2026.10.1",
-  "integration_type": "device",
-  "config_flow": true,
-  "documentation": "https://github.com/tinkerologie/ha-wattpilot",
-  "issue_tracker": "https://github.com/tinkerologie/ha-wattpilot/issues",
-  "requirements": ["wattpilot-api>=1.5.1", "packaging>=26.3"],
-  "dependencies": [],
+  "after_dependencies": ["http", "frontend", "lovelace"],
+  "categories": ["energy.ev_charging"],
   "codeowners": ["@ruaan-deysel"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/tinkerologie/ha-wattpilot",
+  "integration_type": "device",
   "iot_class": "local_push",
-  "loggers": ["wattpilot_api"]
+  "issue_tracker": "https://github.com/tinkerologie/ha-wattpilot/issues",
+  "loggers": ["wattpilot_api"],
+  "requirements": ["wattpilot-api>=1.6.0", "packaging>=26.3"],
+  "version": "2026.10.2",
+  "zeroconf": [
+    {
+      "type": "_http._tcp.local.",
+      "properties": {
+        "devicefamily": "wattpilot"
+      }
+    }
+  ]
 }

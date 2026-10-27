@@ -5,7 +5,7 @@ from __future__ import annotations
 import functools
 import logging
 import re
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any, Final, cast
 
 from homeassistant.components.update import (
     UpdateEntity,
@@ -237,4 +237,4 @@ class ChargerUpdate(ChargerPlatformEntity, UpdateEntity):
             self._identifier,
             state,
         )
-        return state
+        return cast("str | None", state)

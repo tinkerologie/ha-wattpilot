@@ -87,8 +87,9 @@ Before a pull request can be merged, it must satisfy all automated quality gates
 
 ### Prerequisites and Setup
 
-- Python 3.12 or later
-- Dependencies installed via `uv` or `pip install -e ".[test,dev]"`
+- Python 3.14.2 or later
+- Dependencies installed via `uv sync --group dev`
+- Node.js 22 or later for the dashboard cards
 - Pre-commit (`pre-commit install`)
 
 ### Validation Commands
@@ -107,6 +108,23 @@ mypy custom_components
 # Run all pre-commit checks
 pre-commit run --all-files
 ```
+
+### Dashboard cards (frontend)
+
+The cards live in `frontend/` (TypeScript 7 and Lit, bundled with Vite). The built
+bundle `custom_components/wattpilot/frontend/wattpilot-cards.js` is committed so HACS
+installs work without a build step; CI fails if it does not match the source.
+
+```bash
+cd frontend
+npm ci
+npm run typecheck   # tsc --noEmit (TypeScript 7)
+npm test            # Vitest with coverage
+npm run build       # rebuild the bundle, then commit it
+```
+
+Cards resolve entities by device and `translation_key`, so a new card role only needs
+an entry in `frontend/src/entities.ts` that matches the key in `descriptions.py`.
 
 ---
 

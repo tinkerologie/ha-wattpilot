@@ -82,7 +82,7 @@ class ChargerTime(ChargerPlatformEntity, TimeEntity):
     @property
     def native_value(self) -> dt.time | None:
         """Return the current time value."""
-        return self._attr_native_value  # type: ignore[return-value]
+        return self._attr_native_value
 
     async def _async_update_validate_platform_state(
         self, state: Any = None
@@ -109,20 +109,4 @@ class ChargerTime(ChargerPlatformEntity, TimeEntity):
 
     async def async_set_value(self, value: dt.time) -> None:
         """Async: Set the departure time for the next trip."""
-        try:
-            _LOGGER.debug(
-                "%s - %s: async_set_value: value was changed to: %s",
-                self._charger_id,
-                self._identifier,
-                value,
-            )
-            await self._charger.set_next_trip(value)
-        except Exception as e:
-            _LOGGER.error(
-                "%s - %s: async_set_value failed: %s (%s.%s)",
-                self._charger_id,
-                self._identifier,
-                str(e),
-                e.__class__.__module__,
-                type(e).__name__,
-            )
+        await self._async_write(self._charger.set_next_trip(value))

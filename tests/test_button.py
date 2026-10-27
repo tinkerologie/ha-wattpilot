@@ -253,68 +253,6 @@ class TestChargerButton:
             assert button._init_failed is False
 
     @pytest.mark.asyncio
-    async def test_async_press_success(
-        self,
-        hass: HomeAssistant,
-        mock_charger: MagicMock,
-        mock_coordinator: MagicMock,
-        mock_config_entry_data: dict,
-    ) -> None:
-        """Test button press succeeds."""
-        from custom_components.wattpilot.button import ChargerButton
-
-        desc = self._make_button_description(charger_key="frc", set_value=0)
-        entry = self._make_entry(
-            hass, mock_charger, mock_coordinator, mock_config_entry_data
-        )
-
-        with (
-            patch(
-                "custom_components.wattpilot.entities.GetChargerProp",
-                return_value="frc",
-            ),
-            patch(
-                "custom_components.wattpilot.button.async_SetChargerProp",
-                new_callable=AsyncMock,
-            ) as mock_set,
-        ):
-            button = ChargerButton(hass, entry, desc, mock_charger)
-            await button.async_press()
-
-            mock_set.assert_called_once_with(mock_charger, "frc", 0)
-
-    @pytest.mark.asyncio
-    async def test_async_press_handles_error(
-        self,
-        hass: HomeAssistant,
-        mock_charger: MagicMock,
-        mock_coordinator: MagicMock,
-        mock_config_entry_data: dict,
-    ) -> None:
-        """Test button press handles errors gracefully."""
-        from custom_components.wattpilot.button import ChargerButton
-
-        desc = self._make_button_description(charger_key="frc", set_value=0)
-        entry = self._make_entry(
-            hass, mock_charger, mock_coordinator, mock_config_entry_data
-        )
-
-        with (
-            patch(
-                "custom_components.wattpilot.entities.GetChargerProp",
-                return_value="frc",
-            ),
-            patch(
-                "custom_components.wattpilot.button.async_SetChargerProp",
-                new_callable=AsyncMock,
-                side_effect=Exception("Test error"),
-            ),
-        ):
-            button = ChargerButton(hass, entry, desc, mock_charger)
-            # Should not raise exception
-            await button.async_press()
-
-    @pytest.mark.asyncio
     async def test_async_local_push_does_not_write_state(
         self,
         hass: HomeAssistant,

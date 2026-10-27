@@ -1,13 +1,10 @@
-"""Configuration schema for Fronius Wattpilot."""
+"""Configuration schemas for Fronius Wattpilot."""
 
 from __future__ import annotations
 
-import ipaddress
-import logging
-from typing import Final
+from typing import TYPE_CHECKING, Any, Final
 
-import homeassistant.helpers.config_validation as cv
-import voluptuous as vol
+import probatio
 from homeassistant.const import (
     CONF_FRIENDLY_NAME,
     CONF_IP_ADDRESS,
@@ -15,124 +12,78 @@ from homeassistant.const import (
     CONF_TIMEOUT,
 )
 from homeassistant.helpers.selector import (
-    SelectSelector,
-    SelectSelectorConfig,
+    NumberSelector,
+    NumberSelectorConfig,
+    NumberSelectorMode,
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
 )
 
-from .const import (
-    CONF_CLOUD,
-    CONF_CONNECTION,
-    CONF_LOCAL,
-    CONF_SERIAL,
-    DEFAULT_NAME,
-    DEFAULT_TIMEOUT,
-    DOMAIN,
+from .const import CONF_SERIAL, DEFAULT_NAME, DEFAULT_TIMEOUT
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+_PASSWORD_SELECTOR: Final = TextSelector(
+    TextSelectorConfig(type=TextSelectorType.PASSWORD, autocomplete="current-password")
+)
+_TIMEOUT_SELECTOR: Final = NumberSelector(
+    NumberSelectorConfig(
+        min=5, max=120, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="s"
+    )
 )
 
-_LOGGER: Final = logging.getLogger(__name__)
 
-
-def validate_ip_address(value: str) -> str:
-    """Validate an IPv4/IPv6 address string."""
-    try:
-        ipaddress.ip_address(value)
-    except ValueError as err:
-        raise vol.Invalid(f"Invalid IP address: {value}") from err
-    return value
-
-
-CONNECTION_SCHEMA: Final = vol.Schema(
-    {
-        vol.Required(CONF_CONNECTION, default=CONF_LOCAL): SelectSelector(
-            SelectSelectorConfig(options=[CONF_LOCAL, CONF_CLOUD])
-        ),
+def _connection_schema(
+    host_key: str, defaults: Mapping[str, Any], *, password_required: bool
+) -> probatio.Schema:
+    schema: dict[probatio.Marker, Any] = {
+        probatio.Required(
+            CONF_FRIENDLY_NAME, default=defaults.get(CONF_FRIENDLY_NAME, DEFAULT_NAME)
+        ): TextSelector(),
+        probatio.Required(
+            host_key, default=defaults.get(host_key, probatio.UNDEFINED)
+        ): (TextSelector()),
     }
+    password = probatio.Required if password_required else probatio.Optional
+    schema[password(CONF_PASSWORD)] = _PASSWORD_SELECTOR
+    schema[
+        probatio.Optional(
+            CONF_TIMEOUT, default=defaults.get(CONF_TIMEOUT, DEFAULT_TIMEOUT)
+        )
+    ] = _TIMEOUT_SELECTOR
+    return probatio.Schema(schema)
+
+
+def local_schema(
+    defaults: Mapping[str, Any] | None = None, *, password_required: bool = True
+) -> probatio.Schema:
+    """Schema for a local (LAN) connection; reconfiguring may keep the password."""
+    return _connection_schema(
+        CONF_IP_ADDRESS, defaults or {}, password_required=password_required
+    )
+
+
+def cloud_schema(
+    defaults: Mapping[str, Any] | None = None, *, password_required: bool = True
+) -> probatio.Schema:
+    """Schema for a cloud connection; reconfiguring may keep the password."""
+    return _connection_schema(
+        CONF_SERIAL, defaults or {}, password_required=password_required
+    )
+
+
+def discovery_schema(name: str) -> probatio.Schema:
+    """Schema for confirming a discovered charger."""
+    return probatio.Schema(
+        {
+            probatio.Required(CONF_FRIENDLY_NAME, default=name): TextSelector(),
+            probatio.Required(CONF_PASSWORD): _PASSWORD_SELECTOR,
+        }
+    )
+
+
+REAUTH_SCHEMA: Final = probatio.Schema(
+    {probatio.Required(CONF_PASSWORD): _PASSWORD_SELECTOR}
 )
-
-
-LOCAL_SCHEMA: Final = vol.Schema(
-    {
-        vol.Required(CONF_FRIENDLY_NAME, default=DEFAULT_NAME): cv.string,
-        vol.Required(CONF_IP_ADDRESS, default=None): cv.string,
-        vol.Required(CONF_PASSWORD, default=None): cv.string,
-        vol.Optional(CONF_TIMEOUT, default=DEFAULT_TIMEOUT): cv.positive_int,
-    }
-)
-
-
-CLOUD_SCHEMA: Final = vol.Schema(
-    {
-        vol.Required(CONF_FRIENDLY_NAME, default=DEFAULT_NAME): cv.string,
-        vol.Required(CONF_SERIAL, default=None): cv.string,
-        vol.Required(CONF_PASSWORD, default=None): cv.string,
-        vol.Optional(CONF_TIMEOUT, default=DEFAULT_TIMEOUT): cv.positive_int,
-    }
-)
-
-
-async def async_get_OPTIONS_LOCAL_SCHEMA(current_data):
-    """Async: return an schema object with current values as default"""
-    try:
-        _LOGGER.debug("%s - async_get_OPTIONS_LOCAL_SCHEMA", DOMAIN)
-        OPTIONS_LOCAL_SCHEMA: Final = vol.Schema(
-            {
-                vol.Required(
-                    CONF_FRIENDLY_NAME,
-                    default=current_data.get(CONF_FRIENDLY_NAME, DEFAULT_NAME),
-                ): cv.string,
-                vol.Required(
-                    CONF_IP_ADDRESS, default=current_data.get(CONF_IP_ADDRESS, None)
-                ): cv.string,
-                vol.Required(
-                    CONF_PASSWORD, default=current_data.get(CONF_PASSWORD, None)
-                ): cv.string,
-                vol.Optional(
-                    CONF_TIMEOUT,
-                    default=current_data.get(CONF_TIMEOUT, DEFAULT_TIMEOUT),
-                ): cv.positive_int,
-            }
-        )
-        return OPTIONS_LOCAL_SCHEMA
-    except Exception as e:
-        _LOGGER.error(
-            "%s - async_get_OPTIONS_LOCAL_SCHEMA: failed: %s (%s.%s)",
-            DOMAIN,
-            str(e),
-            e.__class__.__module__,
-            type(e).__name__,
-        )
-        return LOCAL_SCHEMA
-
-
-async def async_get_OPTIONS_CLOUD_SCHEMA(current_data):
-    """Async: return an schema object with current values as default"""
-    try:
-        _LOGGER.debug("%s - async_get_OPTIONS_CLOUD_SCHEMA", DOMAIN)
-        OPTIONS_CLOUD_SCHEMA: Final = vol.Schema(
-            {
-                vol.Required(
-                    CONF_FRIENDLY_NAME,
-                    default=current_data.get(CONF_FRIENDLY_NAME, DEFAULT_NAME),
-                ): cv.string,
-                vol.Required(
-                    CONF_SERIAL, default=current_data.get(CONF_SERIAL, None)
-                ): cv.string,
-                vol.Required(
-                    CONF_PASSWORD, default=current_data.get(CONF_PASSWORD, None)
-                ): cv.string,
-                vol.Optional(
-                    CONF_TIMEOUT,
-                    default=current_data.get(CONF_TIMEOUT, DEFAULT_TIMEOUT),
-                ): cv.positive_int,
-            }
-        )
-        return OPTIONS_CLOUD_SCHEMA
-    except Exception as e:
-        _LOGGER.error(
-            "%s - async_get_OPTIONS_CLOUD_SCHEMA: failed: %s (%s.%s)",
-            DOMAIN,
-            str(e),
-            e.__class__.__module__,
-            type(e).__name__,
-        )
-        return CLOUD_SCHEMA

@@ -4,6 +4,8 @@ Custom Home Assistant integration for monitoring and controlling Fronius Wattpil
 
 ## Features
 
+- **Dashboard Cards**: Charger status, charging mode and next trip cards ship with the integration
+
 - **Comprehensive Control**: Switch between charging modes (Default, Eco, Next Trip), start/stop charging, and configure charging behavior
 - **Real-Time Monitoring**: Track charging status, power consumption, energy usage, and vehicle connection state
 - **Multiple Connection Options**: Connect via local LAN (WebSocket) or Fronius Cloud
@@ -17,7 +19,9 @@ Custom Home Assistant integration for monitoring and controlling Fronius Wattpil
 2. Restart Home Assistant
 3. Go to Settings, Devices and Services, Add Integration
 4. Search for Fronius Wattpilot
-5. Choose Local (IP + password) or Cloud (serial + credentials) connection
+5. Choose Local (IP + password) or Cloud (serial + password) connection
+
+Requires Home Assistant 2026.9 or newer.
 
 ## Screenshots
 

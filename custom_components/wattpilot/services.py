@@ -3,322 +3,161 @@
 from __future__ import annotations
 
 import asyncio
-import datetime as dt
-import functools
 import logging
-from typing import TYPE_CHECKING, Any, Final, cast
+from typing import TYPE_CHECKING, Final
 
-from homeassistant.const import (
-    CONF_API_KEY,
-    CONF_DEVICE_ID,
-    CONF_EXTERNAL_URL,
-    CONF_TRIGGER_TIME,
+import probatio
+from homeassistant.config_entries import ConfigEntryState
+from homeassistant.const import CONF_DEVICE_ID, CONF_TRIGGER_TIME
+from homeassistant.core import (
+    HomeAssistant,
+    ServiceCall,
+    ServiceResponse,
+    SupportsResponse,
+    callback,
 )
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import device_registry as dr
 
-from .const import (
-    CONF_CLOUD_API,
-    CONF_PARAMS,
-    DOMAIN,
-)
-from .utils import (
-    async_ConnectCharger,
-    async_GetChargerFromDeviceID,
-    async_GetDataStoreFromDeviceID,
-)
+from .const import CONF_CLOUD_API, DOMAIN
+from .utils import async_ConnectCharger
 
 if TYPE_CHECKING:
-    from homeassistant.core import HomeAssistant, ServiceCall
+    from .types import WattpilotConfigEntry
 
 _LOGGER: Final = logging.getLogger(__name__)
 
-_TRIGGER_TIME_PARTS: Final = 3
-_TRIGGER_TIME_MAX_HOUR: Final = 23
-_TRIGGER_TIME_MAX_MINUTE: Final = 59
-_TRIGGER_TIME_MAX_SECOND: Final = 59
-_REDACT_MIN_LEN: Final = 8
+SERVICE_SET_NEXT_TRIP: Final = "set_next_trip"
+SERVICE_SET_GOE_CLOUD: Final = "set_goe_cloud"
+SERVICE_DISCONNECT_CHARGER: Final = "disconnect_charger"
+SERVICE_RECONNECT_CHARGER: Final = "reconnect_charger"
+
+_DEVICE_SCHEMA: Final = probatio.Schema({probatio.Required(CONF_DEVICE_ID): cv.string})
+_NEXT_TRIP_SCHEMA: Final = _DEVICE_SCHEMA.extend(
+    {probatio.Required(CONF_TRIGGER_TIME): cv.time}
+)
+_GOE_CLOUD_SCHEMA: Final = _DEVICE_SCHEMA.extend(
+    {probatio.Required(CONF_CLOUD_API): cv.boolean}
+)
 
 
-def _parse_trigger_time(trigger_time: Any) -> dt.time | None:
-    if not isinstance(trigger_time, str):
-        return None
-
-    parts = trigger_time.split(":")
-    if len(parts) != _TRIGGER_TIME_PARTS:
-        return None
-
-    try:
-        hour = int(parts[0])
-        minute = int(parts[1])
-        second = int(parts[2])
-    except (TypeError, ValueError):
-        return None
-
-    if not (
-        0 <= hour <= _TRIGGER_TIME_MAX_HOUR
-        and 0 <= minute <= _TRIGGER_TIME_MAX_MINUTE
-        and 0 <= second <= _TRIGGER_TIME_MAX_SECOND
-    ):
-        return None
-
-    return dt.time(hour, minute, second)
-
-
-async def async_registerService(hass: HomeAssistant, name: str, service) -> None:
-    """Register a service if it does not already exist"""
-    try:
-        _LOGGER.debug("%s - async_registerService: %s", DOMAIN, name)
-        if not hass.services.has_service(DOMAIN, name):
-            hass.services.async_register(DOMAIN, name, functools.partial(service, hass))
-        else:
-            _LOGGER.debug(
-                "%s - async_registerServic: service already exists: %s", DOMAIN, name
-            )
-    except Exception as e:
-        _LOGGER.error(
-            "%s - async_registerService: failed: %s (%s.%s)",
-            DOMAIN,
-            str(e),
-            e.__class__.__module__,
-            type(e).__name__,
+@callback
+def async_get_entry_for_device(
+    hass: HomeAssistant, device_id: str
+) -> WattpilotConfigEntry:
+    """Return the loaded Wattpilot config entry that owns a device."""
+    device = dr.async_get(hass).async_get(device_id)
+    if device is None:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="device_not_found",
+            translation_placeholders={"device_id": device_id},
         )
-
-
-async def async_service_SetNextTrip(hass: HomeAssistant, call: ServiceCall) -> None:
-    """Service to set the next trip departure time."""
-    try:
-        device_id = call.data.get(CONF_DEVICE_ID, None)
-        trigger_time = call.data.get(CONF_TRIGGER_TIME, None)
-        if device_id is None:
-            _LOGGER.error(
-                "%s - async_service_SetNextTrip: %s is a required parameter",
-                DOMAIN,
-                CONF_DEVICE_ID,
-            )
-            return
-        if trigger_time is None:
-            _LOGGER.error(
-                "%s - async_service_SetNextTrip: %s is a required parameter",
-                DOMAIN,
-                CONF_TRIGGER_TIME,
-            )
-            return
-
-        charger = await async_GetChargerFromDeviceID(hass, device_id)
-        if charger is None:
-            _LOGGER.error(
-                "%s - async_service_SetNextTrip: unable to get charger for: %s",
-                DOMAIN,
-                CONF_DEVICE_ID,
-            )
-            return
-
-        departure = _parse_trigger_time(trigger_time)
-        if departure is None:
-            _LOGGER.error(
-                "%s - async_service_SetNextTrip: Invalid %s format (expected HH:MM:SS): %s",
-                DOMAIN,
-                CONF_TRIGGER_TIME,
-                trigger_time,
-            )
-            return
-
-        _LOGGER.debug(
-            "%s - async_service_SetNextTrip: setting departure %s for charger: %s",
-            DOMAIN,
-            departure,
-            charger.name,
+    entry = hass.config_entries.async_get_entry(device.config_entry_id)
+    if entry is None or entry.domain != DOMAIN:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="device_not_wattpilot",
+            translation_placeholders={
+                "device": device.name_by_user or device.name or device_id
+            },
         )
-        await charger.set_next_trip(departure)
-
-    except Exception as e:
-        _LOGGER.error(
-            "%s - async_service_SetNextTrip: %s failed: %s (%s.%s)",
-            DOMAIN,
-            call,
-            str(e),
-            e.__class__.__module__,
-            type(e).__name__,
+    if entry.state is not ConfigEntryState.LOADED:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="entry_not_loaded",
+            translation_placeholders={"entry": entry.title},
         )
+    return entry
 
 
-async def async_service_SetGoECloud(hass: HomeAssistant, call: ServiceCall) -> None:
-    """Service to enable or disable the go-e cloud API."""
+def _service_failed(service: str, err: Exception) -> HomeAssistantError:
+    return HomeAssistantError(
+        translation_domain=DOMAIN,
+        translation_key="service_failed",
+        translation_placeholders={"service": service, "error": str(err)},
+    )
+
+
+async def _async_set_next_trip(call: ServiceCall) -> None:
+    """Set the next trip departure time."""
+    entry = async_get_entry_for_device(call.hass, call.data[CONF_DEVICE_ID])
     try:
-        device_id = call.data.get(CONF_DEVICE_ID, None)
-        api_state = call.data.get(CONF_CLOUD_API, None)
-        if device_id is None:
-            _LOGGER.error(
-                "%s - async_service_SetGoECloud: %s is a required parameter",
-                DOMAIN,
-                CONF_DEVICE_ID,
-            )
-            return
-        if api_state is None:
-            _LOGGER.error(
-                "%s - async_service_SetGoECloud: %s is a required parameter",
-                DOMAIN,
-                CONF_CLOUD_API,
-            )
-            return
+        await entry.runtime_data.charger.set_next_trip(call.data[CONF_TRIGGER_TIME])
+    except Exception as err:
+        raise _service_failed(SERVICE_SET_NEXT_TRIP, err) from err
 
-        entry_data = await async_GetDataStoreFromDeviceID(hass, device_id)
-        if entry_data is None:
-            _LOGGER.error(
-                "%s - async_service_SetGoECloud: unable to get entry data for: %s",
-                DOMAIN,
-                CONF_DEVICE_ID,
-            )
-            return
 
-        charger = await async_GetChargerFromDeviceID(hass, device_id)
-        if charger is None:
-            _LOGGER.error(
-                "%s - async_service_SetGoECloud: unable to get charger for: %s",
-                DOMAIN,
-                CONF_DEVICE_ID,
-            )
-            return
-
-        if api_state is True:
-            _LOGGER.debug("%s - async_service_SetGoECloud: Enabling cloud api", DOMAIN)
-            cloud_info = await charger.enable_cloud_api()
-            entry_data[CONF_API_KEY] = cloud_info.api_key
-            entry_data[CONF_EXTERNAL_URL] = cloud_info.url
-
-            redacted_key = "<redacted>"
-            if getattr(cloud_info, "api_key", None):
-                api_key = str(cloud_info.api_key)
-                if len(api_key) >= _REDACT_MIN_LEN:
-                    redacted_key = f"{api_key[:4]}…{api_key[-4:]}"
-            _LOGGER.info(
-                "%s - async_service_SetGoECloud: %s cloud API enabled (key: %s, url: %s)",
-                DOMAIN,
-                charger.name,
-                redacted_key,
-                cloud_info.url,
-            )
-        else:
-            _LOGGER.debug(
-                "%s - async_service_SetGoECloud: %s disabling cloud api",
-                DOMAIN,
-                charger.name,
-            )
+async def _async_set_goe_cloud(call: ServiceCall) -> ServiceResponse:
+    """Enable or disable the go-e cloud API."""
+    entry = async_get_entry_for_device(call.hass, call.data[CONF_DEVICE_ID])
+    charger = entry.runtime_data.charger
+    try:
+        if not call.data[CONF_CLOUD_API]:
             await charger.disable_cloud_api()
-            entry_data[CONF_API_KEY] = False
-            _LOGGER.info(
-                "%s - async_service_SetGoECloud: %s DISABLED cloud API",
-                DOMAIN,
-                charger.name,
-            )
-
-    except Exception as e:
-        _LOGGER.error(
-            "%s - async_service_SetGoECloud: %s failed: %s (%s.%s)",
-            DOMAIN,
-            call,
-            str(e),
-            e.__class__.__module__,
-            type(e).__name__,
-        )
+            _LOGGER.info("%s: go-e cloud API disabled", entry.title)
+            return {"enabled": False}
+        cloud_info = await charger.enable_cloud_api()
+    except Exception as err:
+        raise _service_failed(SERVICE_SET_GOE_CLOUD, err) from err
+    _LOGGER.info("%s: go-e cloud API enabled (url: %s)", entry.title, cloud_info.url)
+    return {"enabled": True, "api_key": cloud_info.api_key, "url": cloud_info.url}
 
 
-async def async_service_ReConnectCharger(
-    hass: HomeAssistant, call: ServiceCall
-) -> bool:
-    """Service to reconnect to the charger."""
+async def _async_disconnect_charger(call: ServiceCall) -> None:
+    """Disconnect from the charger."""
+    entry = async_get_entry_for_device(call.hass, call.data[CONF_DEVICE_ID])
     try:
-        device_id = call.data.get(CONF_DEVICE_ID, None)
-        if device_id is None:
-            _LOGGER.error(
-                "%s - async_service_ReConnectCharger: %s is a required parameter",
-                DOMAIN,
-                CONF_DEVICE_ID,
-            )
-            return False
+        await entry.runtime_data.charger.disconnect()
+    except Exception as err:
+        raise _service_failed(SERVICE_DISCONNECT_CHARGER, err) from err
+    _LOGGER.info("%s: charger disconnected", entry.title)
 
-        entry_data = await async_GetDataStoreFromDeviceID(hass, device_id)
-        if entry_data is None:
-            _LOGGER.error(
-                "%s - async_service_ReConnectCharger: unable to get entry data for: %s",
-                DOMAIN,
-                CONF_DEVICE_ID,
-            )
-            return False
 
-        charger = await async_GetChargerFromDeviceID(hass, device_id)
-        if charger is None:
-            _LOGGER.error(
-                "%s - async_service_ReConnectCharger: unable to get charger for: %s",
-                DOMAIN,
-                CONF_DEVICE_ID,
-            )
-            return False
-
+async def _async_reconnect_charger(call: ServiceCall) -> None:
+    """Reconnect to the charger."""
+    entry = async_get_entry_for_device(call.hass, call.data[CONF_DEVICE_ID])
+    charger = entry.runtime_data.charger
+    try:
         if charger.connected:
             await charger.disconnect()
             await asyncio.sleep(1)
-
-        result = await async_ConnectCharger(device_id, entry_data[CONF_PARAMS], charger)
-        if not result:
-            return False
-        charger = cast("Any", result)
-        _LOGGER.info(
-            "%s - async_service_ReConnectCharger: Charger reconnected: %s",
-            DOMAIN,
-            charger.name,
+    except Exception as err:
+        raise _service_failed(SERVICE_RECONNECT_CHARGER, err) from err
+    if not await async_ConnectCharger(
+        call.hass, entry.entry_id, dict(entry.data), charger
+    ):
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="reconnect_failed",
+            translation_placeholders={"entry": entry.title},
         )
-        return True
-
-    except Exception as e:
-        _LOGGER.error(
-            "%s - async_service_ReConnectCharger: %s failed: %s (%s.%s)",
-            DOMAIN,
-            call,
-            str(e),
-            e.__class__.__module__,
-            type(e).__name__,
-        )
-        return False
+    _LOGGER.info("%s: charger reconnected", entry.title)
 
 
-async def async_service_DisconnectCharger(
-    hass: HomeAssistant, call: ServiceCall
-) -> bool:
-    """Service to disconnect from the charger."""
-    try:
-        device_id = call.data.get(CONF_DEVICE_ID, None)
-        if device_id is None:
-            _LOGGER.error(
-                "%s - async_service_DisconnectCharger: %s is a required parameter",
-                DOMAIN,
-                CONF_DEVICE_ID,
-            )
-            return False
-
-        charger = await async_GetChargerFromDeviceID(hass, device_id)
-        if charger is None:
-            _LOGGER.error(
-                "%s - async_service_DisconnectCharger: unable to get charger for: %s",
-                DOMAIN,
-                CONF_DEVICE_ID,
-            )
-            return False
-
-        await charger.disconnect()
-        _LOGGER.info(
-            "%s - async_service_DisconnectCharger: Charger disconnected: %s",
-            DOMAIN,
-            charger.name,
-        )
-        return True
-
-    except Exception as e:
-        _LOGGER.error(
-            "%s - async_service_DisconnectCharger: %s failed: %s (%s.%s)",
-            DOMAIN,
-            call,
-            str(e),
-            e.__class__.__module__,
-            type(e).__name__,
-        )
-        return False
+@callback
+def async_setup_services(hass: HomeAssistant) -> None:
+    """Register the integration's services."""
+    hass.services.async_register(
+        DOMAIN, SERVICE_SET_NEXT_TRIP, _async_set_next_trip, schema=_NEXT_TRIP_SCHEMA
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_SET_GOE_CLOUD,
+        _async_set_goe_cloud,
+        schema=_GOE_CLOUD_SCHEMA,
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_DISCONNECT_CHARGER,
+        _async_disconnect_charger,
+        schema=_DEVICE_SCHEMA,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_RECONNECT_CHARGER,
+        _async_reconnect_charger,
+        schema=_DEVICE_SCHEMA,
+    )

@@ -382,28 +382,3 @@ class TestChargerTime:
             new_time = dt.time(8, 30, 0)
             await time_entity.async_set_value(new_time)
             mock_charger.set_next_trip.assert_called_once_with(new_time)
-
-    @pytest.mark.asyncio
-    async def test_async_set_value_handles_exception(
-        self,
-        hass: HomeAssistant,
-        mock_charger: MagicMock,
-        mock_coordinator: MagicMock,
-        mock_config_entry_data: dict,
-    ) -> None:
-        """Test async_set_value handles exceptions gracefully."""
-        from custom_components.wattpilot.time import ChargerTime
-
-        mock_charger.set_next_trip = AsyncMock(side_effect=Exception("Connection lost"))
-        desc = self._make_time_description()
-        entry = self._make_entry(
-            hass, mock_charger, mock_coordinator, mock_config_entry_data
-        )
-
-        with patch(
-            "custom_components.wattpilot.entities.GetChargerProp", return_value=25200
-        ):
-            time_entity = ChargerTime(hass, entry, desc, mock_charger)
-            new_time = dt.time(8, 30, 0)
-            # Should not raise
-            await time_entity.async_set_value(new_time)

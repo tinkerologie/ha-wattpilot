@@ -19,7 +19,6 @@ from .descriptions import (
     WattpilotButtonEntityDescription,
 )
 from .entities import ChargerPlatformEntity, filter_descriptions
-from .utils import async_SetChargerProp
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -109,18 +108,8 @@ class ChargerButton(ChargerPlatformEntity, ButtonEntity):
 
     async def async_press(self) -> None:
         """Async: Handle button press."""
-        try:
-            await async_SetChargerProp(
-                self._charger,
-                self._identifier,
-                self.entity_description.set_value,
+        await self._async_write(
+            self._charger.set_property(
+                self._identifier, self.entity_description.set_value
             )
-        except Exception as e:
-            _LOGGER.error(
-                "%s - %s: update failed: %s (%s.%s)",
-                self._charger_id,
-                self._identifier,
-                str(e),
-                e.__class__.__module__,
-                type(e).__name__,
-            )
+        )

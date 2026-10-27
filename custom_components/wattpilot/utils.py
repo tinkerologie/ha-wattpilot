@@ -10,19 +10,17 @@ from homeassistant.const import (
     CONF_FRIENDLY_NAME,
     CONF_IP_ADDRESS,
     CONF_PASSWORD,
+    CONF_TIMEOUT,
 )
-from homeassistant.helpers import device_registry as dr
 from wattpilot_api import Wattpilot
 
 from .const import (
-    CONF_CHARGER,
     CONF_CLOUD,
     CONF_CONNECTION,
     CONF_LOCAL,
-    CONF_PARAMS,
-    CONF_PUSH_ENTITIES,
     CONF_SERIAL,
     DEFAULT_NAME,
+    DEFAULT_TIMEOUT,
     DOMAIN,
     EVENT_PROPS,
     EVENT_PROPS_ID,
@@ -163,220 +161,100 @@ def has_charger_prop(charger: Any, identifier: str | None = None) -> bool:
     return identifier in all_props
 
 
-async def async_SetChargerProp(
-    charger: Any,
-    identifier: str | None = None,
-    value: Any | None = None,
-) -> bool:
+async def async_PrepareChargerApiDefinition(hass: HomeAssistant, charger: Any) -> None:
     """
-    Async: set the value of a charger property.
+    Async: load the charger's API definition cache in the executor.
 
-    Type coercion is handled automatically by wattpilot-api.
+    wattpilot-api reads and parses its bundled wattpilot.yaml lazily on the first
+    set_property call. Doing that on the event loop trips Home Assistant's
+    blocking-call detection, so warm the per-client cache here instead.
     """
-    try:
-        if identifier is None:
-            _LOGGER.error(
-                "%s - async_SetChargerProp: property name has to be defined", DOMAIN
-            )
-            return False
-        if value is None:
-            _LOGGER.error(
-                "%s - async_SetChargerProp: A value parameter is required: %s=%s",
-                DOMAIN,
-                identifier,
-                value,
-            )
-            return False
-
+    get_api_def = getattr(charger, "_get_api_def", None)
+    if not callable(get_api_def):
         _LOGGER.debug(
-            "%s - async_SetChargerProp: Send property update to charger: %s=%s",
+            "%s - async_PrepareChargerApiDefinition: client has no API definition loader",
             DOMAIN,
-            identifier,
-            value,
         )
-        await charger.set_property(identifier, value)
-    except Exception:
-        _LOGGER.exception("%s - async_SetChargerProp: Could not set property", DOMAIN)
-        return False
-    return True
+        return
+    if getattr(charger, "_api_def_cache", None) is not None:
+        return
+    try:
+        await hass.async_add_executor_job(get_api_def)
+    except Exception as err:  # best effort: writes fall back to the lazy load
+        _LOGGER.warning(
+            "%s - async_PrepareChargerApiDefinition: could not preload API definition for %s: %s",
+            DOMAIN,
+            getattr(charger, "serial", "unknown"),
+            err,
+        )
 
 
-def _resolve_wattpilot_entry(hass: HomeAssistant, device: Any) -> ConfigEntry | None:
-    """Resolve the Wattpilot ConfigEntry for a device without accessing config_entries on ordinary devices."""
-    config_entry_id = getattr(device, "config_entry_id", None)
-    if config_entry_id:
-        entry = hass.config_entries.async_get_entry(config_entry_id)
-        if entry is not None and entry.domain == DOMAIN:
-            return entry
-
-    # Fall back to inspecting additional entries for composite or legacy devices
-    is_composite = (
-        getattr(device, "is_composite_device", False)
-        or getattr(device, "_composite_subentries", None) is not None
-        or not config_entry_id
+def build_charger(data: Mapping[str, Any]) -> Wattpilot:
+    """Create a Wattpilot client for a local or cloud connection."""
+    connection = data.get(CONF_CONNECTION, CONF_LOCAL)
+    if connection == CONF_LOCAL:
+        host = data.get(CONF_IP_ADDRESS)
+        cloud = False
+    elif connection == CONF_CLOUD:
+        host = data.get(CONF_SERIAL)
+        cloud = True
+    else:
+        msg = f"Unknown connection type: {connection}"
+        raise ValueError(msg)
+    timeout = float(data.get(CONF_TIMEOUT) or DEFAULT_TIMEOUT)
+    return Wattpilot(
+        host=str(host),
+        password=str(data.get(CONF_PASSWORD) or ""),
+        serial=host,
+        cloud=cloud,
+        connect_timeout=timeout,
+        init_timeout=timeout,
     )
-    if is_composite:
-        for entry_id in getattr(device, "config_entries", ()):
-            if entry_id == config_entry_id:
-                continue
-            entry = hass.config_entries.async_get_entry(entry_id)
-            if entry is not None and entry.domain == DOMAIN:
-                return entry
-
-    return None
 
 
-async def async_GetDataStoreFromDeviceID(
-    hass: HomeAssistant, device_id: str
-) -> dict[str, Any] | None:
-    """Async: return the data store for a specific device_id."""
-    try:
-        _LOGGER.debug(
-            "%s - async_GetDataStoreFromDeviceID: receiving device: %s",
-            DOMAIN,
-            device_id,
-        )
-        device_registry = dr.async_get(hass)
-        device = device_registry.async_get(device_id)
-        if device is None:
-            _LOGGER.error(
-                "%s - async_GetDataStoreFromDeviceID: device not found: %s",
-                DOMAIN,
-                device_id,
-            )
-            return None
+async def async_connect_new_charger(
+    hass: HomeAssistant, data: Mapping[str, Any]
+) -> Wattpilot:
+    """
+    Create, prepare and connect a charger client.
 
-        _LOGGER.debug(
-            "%s - async_GetDataStoreFromDeviceID: get data store for config entry",
-            DOMAIN,
-        )
-        entry = _resolve_wattpilot_entry(hass, device)
-        if entry is not None:
-            runtime_data = getattr(entry, "runtime_data", None)
-            if runtime_data is not None:
-                return {
-                    CONF_CHARGER: runtime_data.charger,
-                    CONF_PUSH_ENTITIES: runtime_data.push_entities,
-                    CONF_PARAMS: runtime_data.params,
-                    "entry": entry,
-                    "runtime_data": runtime_data,
-                }
-
-        _LOGGER.error(
-            "%s - async_GetDataStoreFromDeviceID: Unable to receive data store: %s",
-            DOMAIN,
-            device_id,
-        )
-    except Exception:
-        _LOGGER.exception(
-            "%s - async_GetDataStoreFromDeviceID: Could not get data store", DOMAIN
-        )
-    return None
-
-
-async def async_GetChargerFromDeviceID(hass: HomeAssistant, device_id: str) -> Any:
-    """Async: return the charger object for a specific device_id."""
-    try:
-        _LOGGER.debug(
-            "%s - async_GetChargerFromDeviceID: receiving device: %s",
-            DOMAIN,
-            device_id,
-        )
-        device_registry = dr.async_get(hass)
-        device = device_registry.async_get(device_id)
-        if device is None:
-            _LOGGER.error(
-                "%s - async_GetChargerFromDeviceID: device not found: %s",
-                DOMAIN,
-                device_id,
-            )
-            return None
-
-        _LOGGER.debug(
-            "%s - async_GetChargerFromDeviceID: get charger object for entry",
-            DOMAIN,
-        )
-        entry = _resolve_wattpilot_entry(hass, device)
-        if entry is not None:
-            runtime_data = getattr(entry, "runtime_data", None)
-            if runtime_data is not None and runtime_data.charger is not None:
-                return runtime_data.charger
-
-        _LOGGER.error(
-            "%s - async_GetChargerFromDeviceID: Unable to identify charger for device: %s",
-            DOMAIN,
-            device_id,
-        )
-        return None
-    except Exception:
-        _LOGGER.exception(
-            "%s - async_GetChargerFromDeviceID: Could not get charger", DOMAIN
-        )
-    return None
+    Unlike async_ConnectCharger this raises the library's errors, so callers can
+    tell authentication failures from connection problems.
+    """
+    charger = build_charger(data)
+    await async_PrepareChargerApiDefinition(hass, charger)
+    await charger.connect()
+    return charger
 
 
 async def async_ConnectCharger(
-    entry_or_device_id: str, data: dict[str, Any], charger: Any | None = None
+    hass: HomeAssistant,
+    entry_or_device_id: str,
+    data: dict[str, Any],
+    charger: Any | None = None,
 ) -> Any | bool:
-    """Async: connect charger and handle connection errors."""
+    """
+    Async: connect a new or existing charger and handle connection errors.
+
+    The client's API definition is loaded in the executor before connecting so
+    later property writes never do file I/O on the event loop. Returns the
+    charger on success and False on any failure.
+    """
     try:
-        con = data.get(CONF_CONNECTION, CONF_LOCAL)
-        if charger is None and con == CONF_LOCAL:
-            charger_id = data.get(CONF_IP_ADDRESS)
-            _LOGGER.debug(
-                "%s - async_ConnectCharger: Connecting %s charger by ip: %s",
-                entry_or_device_id,
-                CONF_LOCAL,
-                charger_id,
-            )
-            charger = Wattpilot(
-                host=charger_id,
-                password=data.get(CONF_PASSWORD),
-                serial=charger_id,
-                cloud=False,
-            )
-        elif charger is None and con == CONF_CLOUD:
-            charger_id = data.get(CONF_SERIAL)
-            _LOGGER.debug(
-                "%s - async_ConnectCharger: Connecting %s charger by serial: %s",
-                entry_or_device_id,
-                CONF_CLOUD,
-                charger_id,
-            )
-            charger = Wattpilot(
-                host=charger_id,
-                password=data.get(CONF_PASSWORD),
-                serial=charger_id,
-                cloud=True,
-            )
-        elif charger is not None:
-            charger_id = charger.name
-            _LOGGER.debug(
-                "%s - async_ConnectCharger: Reconnect existing charger: %s",
-                entry_or_device_id,
-                charger.name,
-            )
-        else:
-            charger_id = "unknown"
-            _LOGGER.warning(
-                "%s - async_ConnectCharger: Unknown or empty connection type: %s",
-                entry_or_device_id,
-                con,
-            )
         if charger is None:
-            return False
+            charger = build_charger(data)
+        _LOGGER.debug(
+            "%s - async_ConnectCharger: connecting charger %s",
+            entry_or_device_id,
+            getattr(charger, "name", None),
+        )
+        await async_PrepareChargerApiDefinition(hass, charger)
         await charger.connect()
     except Exception:
         _LOGGER.exception(
             "%s - async_ConnectCharger: Connecting charger failed", entry_or_device_id
         )
         return False
-
-    _LOGGER.debug(
-        "%s - async_ConnectCharger: Charger connected: %s",
-        entry_or_device_id,
-        charger.name,
-    )
     return charger
 
 
