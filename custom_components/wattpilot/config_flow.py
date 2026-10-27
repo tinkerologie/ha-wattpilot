@@ -39,7 +39,7 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         self, data: Mapping[str, Any]
     ) -> tuple[str | None, dict[str, str]]:
         """Connect once with the given settings; return the serial or form errors."""
-        if data[CONF_CONNECTION] == CONF_LOCAL and not _valid_ip(
+        if data.get(CONF_CONNECTION, CONF_LOCAL) == CONF_LOCAL and not _valid_ip(
             str(data.get(CONF_IP_ADDRESS, ""))
         ):
             return None, {CONF_IP_ADDRESS: "invalid_ip"}

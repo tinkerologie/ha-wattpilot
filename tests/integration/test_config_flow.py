@@ -300,3 +300,19 @@ async def test_reconfigure_legacy_entry_rejects_serial_of_other_entry(
 
     assert result["reason"] == "already_configured"
     assert legacy.unique_id == "192.168.1.150"
+
+
+async def test_reauth_entry_without_connection_key(
+    hass: HomeAssistant, flow_connect: AsyncMock
+) -> None:
+    """Old entries without a stored connection type reauthenticate as local."""
+    data = {key: value for key, value in ENTRY_DATA.items() if key != CONF_CONNECTION}
+    entry = MockConfigEntry(domain=DOMAIN, title="Old", unique_id="12345678", data=data)
+    entry.add_to_hass(hass)
+    result = await entry.start_reauth_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"password": "new-secret"}
+    )
+
+    assert result["reason"] == "reauth_successful"
+    assert entry.data["password"] == "new-secret"
