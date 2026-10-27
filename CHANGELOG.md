@@ -35,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Blocking call on the event loop** ([#173](https://github.com/tinkerologie/ha-wattpilot/issues/173)): `wattpilot-api` loaded its API definition (`wattpilot.yaml`) on the first property write, which Home Assistant reported as blocking `import_module`, `open` and `read_text` calls. The definition is now loaded in the executor before connecting.
 - Removed the use of `DeviceEntry.config_entries`, which logs deprecation warnings from Home Assistant 2026.10.
 - Service calls for a charger that is not loaded no longer fail silently.
-- Switch, number, select, button and time changes that the charger rejects now raise a translated error instead of being logged and ignored.
+- Switch, number, select, button and time changes that cannot be sent to the charger now raise a translated error instead of being logged and ignored. (A refusal from the charger itself is still only logged by wattpilot-api.)
 
 ### Removed
 
