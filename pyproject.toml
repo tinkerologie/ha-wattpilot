@@ -20,7 +20,7 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-    "wattpilot-api>=1.5.1",
+    "wattpilot-api>=1.6.0",
     "packaging>=26.3",
 ]
 

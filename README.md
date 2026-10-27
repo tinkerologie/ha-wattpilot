@@ -126,7 +126,7 @@ The charger keeps a websocket open to Home Assistant and pushes every property c
 | `wattpilot.disconnect_charger` | `device_id`                 | Closes the connection (entities become unavailable).                                           |
 | `wattpilot.reconnect_charger`  | `device_id`                 | Reconnects a disconnected charger.                                                             |
 
-Invalid input (for example an unknown device) raises a validation error in the UI, and errors from the charger connection raise an error with their message. The same applies to entities: if a switch, number, select, button or time change cannot be sent to the charger (for example because the connection dropped), Home Assistant shows an error. A change that the charger receives but refuses is not reported yet: wattpilot-api only logs the charger's rejection, and the entity keeps showing the charger's actual value.
+Invalid input (for example an unknown device) raises a validation error in the UI, and errors from the charger connection raise an error with their message. The same applies to entities: if the charger refuses a switch, number, select, button or time change, does not acknowledge it in time, or the connection drops, Home Assistant shows an error with the charger's message instead of silently keeping the old value.
 
 ### Example: charge for the morning trip
 

@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Minimum Home Assistant version is now 2026.9.**
+- Requires `wattpilot-api>=1.6.0`, which waits for the charger to acknowledge each write.
 - Setup tests the connection before creating an entry, uses the charger serial as unique ID, and starts with a local/cloud menu. Existing entries keep working unchanged.
 - The options flow is replaced by **Reconfigure** (Home Assistant 2026.12 rejects update listeners combined with reload helpers).
 - Actions are registered once in `async_setup`, validate their input, and raise translated errors instead of only logging failures.
@@ -35,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Blocking call on the event loop** ([#173](https://github.com/tinkerologie/ha-wattpilot/issues/173)): `wattpilot-api` loaded its API definition (`wattpilot.yaml`) on the first property write, which Home Assistant reported as blocking `import_module`, `open` and `read_text` calls. The definition is now loaded in the executor before connecting.
 - Removed the use of `DeviceEntry.config_entries`, which logs deprecation warnings from Home Assistant 2026.10.
 - Service calls for a charger that is not loaded no longer fail silently.
-- Switch, number, select, button and time changes that cannot be sent to the charger now raise a translated error instead of being logged and ignored. (A refusal from the charger itself is still only logged by wattpilot-api.)
+- Switch, number, select, button and time changes that the charger refuses, does not acknowledge, or cannot receive now raise a translated error with the charger's message instead of being logged and ignored ([tinkerologie/wattpilot-api#38](https://github.com/tinkerologie/wattpilot-api/issues/38)).
 
 ### Removed
 

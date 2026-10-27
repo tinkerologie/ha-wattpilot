@@ -161,3 +161,19 @@ async def test_select_rejects_unknown_option(
 
     assert err.value.translation_key == "invalid_option"
     charger.set_property.assert_not_awaited()
+
+
+async def test_charger_refusal_is_reported(
+    mock_hass: MagicMock, mock_config_entry: Any, charger: MagicMock
+) -> None:
+    """A refusal from the charger (wattpilot-api CommandError) reaches the user."""
+    from wattpilot_api.exceptions import CommandError
+
+    charger.set_property.side_effect = CommandError(
+        "Charger rejected the command (requestId=3): amp out of range"
+    )
+
+    with pytest.raises(HomeAssistantError) as err:
+        await _number(mock_hass, mock_config_entry, charger).async_set_native_value(99)
+
+    assert "amp out of range" in err.value.translation_placeholders["error"]
