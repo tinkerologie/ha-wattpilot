@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Development and test environments now use Pillow 13.0.0 (via a uv override), fixing the 33 Pillow security advisories reported by Dependabot against `uv.lock` ([#183](https://github.com/tinkerologie/ha-wattpilot/issues/183)). Pillow comes in only through the `homeassistant` dev dependency, which still pins 12.3.0; the integration itself does not use or ship Pillow.
+
 ## [2026.10.2] - 2026-10-27
 
 ### Added
