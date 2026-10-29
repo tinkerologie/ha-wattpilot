@@ -1224,6 +1224,67 @@ class TestChargerPlatformEntity:
         )
         assert sum("available again" in m for m in messages) == 1
 
+    @pytest.mark.parametrize(
+        ("source", "props", "setup", "reason"),
+        [
+            (SOURCE_PROPERTY, {"p": 1}, "coordinator_down", "coordinator unavailable"),
+            (SOURCE_PROPERTY, {"p": 1}, "init_failed", "entity init not complete"),
+            (
+                SOURCE_PROPERTY,
+                {"p": 1},
+                "not_initialized",
+                "not all properties initialized",
+            ),
+            (SOURCE_PROPERTY, {"other": 1}, None, "unknown property"),
+            (SOURCE_PROPERTY, {"p": None}, None, "unknown property"),
+            (SOURCE_ATTRIBUTE, {}, "no_attribute", "unknown attribute"),
+            (
+                SOURCE_NAMESPACELIST,
+                {"p": "x"},
+                None,
+                "namespacelist is not a list/tuple (str)",
+            ),
+            (SOURCE_NAMESPACELIST, {"p": [None]}, None, "unknown namespacelist item 0"),
+            (SOURCE_PROPERTY, {"p": 1}, None, None),
+        ],
+    )
+    def test_unavailable_reason(  # noqa: PLR0913
+        self,
+        mock_hass: HomeAssistant,
+        mock_config_entry: Any,
+        source: str,
+        props: dict[str, Any],
+        setup: str | None,
+        reason: str | None,
+    ) -> None:
+        """Each availability gate reports its own reason."""
+        charger = MagicMock(connected=True, properties_initialized=True)
+        charger.all_properties = {"p": [1], "p0": 1}
+        charger.p = 1
+        desc_kwargs: dict[str, Any] = {
+            "key": "p",
+            "charger_key": "p",
+            "name": "P",
+            "source": source,
+        }
+        if source == SOURCE_NAMESPACELIST:
+            desc_kwargs["namespace_id"] = 0
+        desc = WattpilotSensorEntityDescription(**desc_kwargs)
+        entity = ChargerPlatformEntity(mock_hass, mock_config_entry, desc, charger)
+        entity.coordinator.last_update_success = True
+        charger.all_properties = props
+        if setup == "coordinator_down":
+            entity.coordinator.last_update_success = False
+        elif setup == "init_failed":
+            entity._init_failed = True
+        elif setup == "not_initialized":
+            charger.properties_initialized = False
+        elif setup == "no_attribute":
+            del charger.p
+
+        assert entity._unavailable_reason() == reason
+        assert entity.available is (reason is None)
+
     def test_available_reads_all_properties_twice(
         self, mock_hass: HomeAssistant, mock_config_entry: Any
     ) -> None:

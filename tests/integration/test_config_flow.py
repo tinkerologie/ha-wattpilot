@@ -530,9 +530,30 @@ async def test_zeroconf_skips_link_local_addresses(
     )
     assert result["description_placeholders"]["host"] == "192.168.1.77"
 
+    for unusable in ("169.254.10.21", "127.0.0.1", "0.0.0.0"):  # noqa: S104
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": SOURCE_ZEROCONF},
+            data=_zeroconf(unusable, "87654321"),
+        )
+        assert result["reason"] == "not_wattpilot"
+
+
+async def test_zeroconf_matches_legacy_entry_by_any_announced_address(
+    hass: HomeAssistant,
+) -> None:
+    """An entry keyed by IP is matched by any address the charger announces."""
+    from ipaddress import ip_address
+
+    from homeassistant.config_entries import SOURCE_ZEROCONF
+
+    MockConfigEntry(
+        domain=DOMAIN, unique_id="192.168.1.100", data=dict(ENTRY_DATA)
+    ).add_to_hass(hass)
+    info = _zeroconf("192.168.1.55")
+    info.ip_addresses = [ip_address("192.168.1.55"), ip_address("192.168.1.100")]
     result = await hass.config_entries.flow.async_init(
-        DOMAIN,
-        context={"source": SOURCE_ZEROCONF},
-        data=_zeroconf("169.254.10.21", "87654321"),
+        DOMAIN, context={"source": SOURCE_ZEROCONF}, data=info
     )
-    assert result["reason"] == "not_wattpilot"
+
+    assert result["reason"] == "already_configured"

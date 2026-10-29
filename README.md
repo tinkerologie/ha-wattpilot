@@ -174,10 +174,12 @@ logger:
   logs:
     custom_components.wattpilot: debug
     wattpilot_api: debug
-    websockets: debug
+    websockets: info
 ```
 
-When you report dropouts, include the debug log around a dropout and the diagnostics download (**Settings → Devices & services → Fronius Wattpilot → ⋮ → Download diagnostics**). The log shows each availability change once, with its reason (`unavailable because charger disconnected`, `… coordinator unavailable`), any address change from discovery (`moved from … to …`), and the WebSocket close reason. The diagnostics show `coordinator.last_update_success` and the `websockets` version.
+Debug logs contain the raw messages from the charger, including your Wi-Fi networks and charger settings. Remove anything private before you share a log.
+
+When you report dropouts, include the debug log around a dropout and the diagnostics download (**Settings → Devices & services → Fronius Wattpilot → ⋮ → Download diagnostics**). The log shows each availability change once, with its reason (`unavailable because charger disconnected`, `… coordinator unavailable`), any address change from discovery (`moved from … to …`), and when the connection closes. The diagnostics show `coordinator.last_update_success` and the `websockets` version.
 
 ## Contributing
 
