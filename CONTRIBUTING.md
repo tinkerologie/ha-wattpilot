@@ -145,6 +145,25 @@ Helper scripts live in `scripts/` (not `./script/`).
   - Import smoke or test failure: reproduce it in a scratch venv with `uv pip install . "homeassistant==<version>"` (for the dev channel, `"homeassistant @ https://github.com/home-assistant/core/archive/<commit>.tar.gz"`) and `python scripts/import_smoke.py`, then fix it with an API that also works on the minimum supported Home Assistant.
   - Hassfest failure: run the same command locally; a new validator rule or a changed Core layout may need a `scripts/hassfest` change.
 
+### Release zip
+
+Releases ship `wattpilot.zip`, which HACS and the Marketplace install (`hacs.json`
+names it). `.github/workflows/release.yml` builds it with `scripts/build_release_zip.py`
+when the `manifest.json` version changes on `main`. The script packages only the files
+Git tracks under `custom_components/wattpilot/`, at the zip root, and fails when a
+required file, the card bundle `frontend.py` serves, or a frontend import is missing.
+Commit new files (for example a new frontend chunk) before building. To build and check
+reproducibility locally:
+
+```bash
+export SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)
+python3 scripts/build_release_zip.py --output-dir dist/a --version "v$(jq -r .version custom_components/wattpilot/manifest.json)"
+TZ=Pacific/Kiritimati python3 scripts/build_release_zip.py --output-dir dist/b
+cmp dist/a/wattpilot.zip dist/b/wattpilot.zip && (cd dist/a && sha256sum -c SHA256SUMS)
+```
+
+The `Release zip` job in `validate.yml` runs the same check on every pull request.
+
 ---
 
 ## Commit Message Guidelines

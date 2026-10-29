@@ -42,9 +42,22 @@ Fronius Wattpilot Home 11 J, Wattpilot Home 22 J and Wattpilot Flex. Entities th
 
 ### Manual
 
-1. Download the latest release from the [Releases](https://github.com/tinkerologie/ha-wattpilot/releases) page.
-2. Copy the `wattpilot` folder to `config/custom_components/`.
+1. Download `wattpilot.zip` from the latest release on the [Releases](https://github.com/tinkerologie/ha-wattpilot/releases) page.
+2. Create the folder `config/custom_components/wattpilot/` and extract the zip into it. `manifest.json` must end up directly in that folder (the zip has no `custom_components/wattpilot/` folder inside it).
 3. Restart Home Assistant.
+
+### Verify a download
+
+Each release since the first one that ships `wattpilot.zip` carries the zip, a `SHA256SUMS` file and a signed build provenance attestation. HACS and the Marketplace install the same zip. The "Downloaded N times" figure they show is the download count of the latest release's zip, so it starts again with each release. To check that a zip you downloaded is the one the release workflow built, run this in the folder that holds both files (with the [GitHub CLI](https://cli.github.com/)):
+
+```bash
+sha256sum -c SHA256SUMS            # macOS: shasum -a 256 -c SHA256SUMS
+gh attestation verify wattpilot.zip --repo tinkerologie/ha-wattpilot \
+  --signer-workflow tinkerologie/ha-wattpilot/.github/workflows/release.yml
+gh release verify-asset <tag> wattpilot.zip --repo tinkerologie/ha-wattpilot   # e.g. v2026.10.3
+```
+
+Releases from before the zip (2026.10.2 and older) have no `wattpilot.zip`. Choosing one of those in HACS or the Marketplace can fail to download; install a newer release instead.
 
 ## Configuration
 

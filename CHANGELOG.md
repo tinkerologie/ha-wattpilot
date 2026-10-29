@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Release zip** ([#189](https://github.com/tinkerologie/ha-wattpilot/issues/189)): each release ships `wattpilot.zip`, a `SHA256SUMS` file and a signed build provenance attestation. `hacs.json` sets `zip_release` and `filename`, so HACS and the Marketplace install the zip and show how often the latest release was downloaded. The zip is built reproducibly by `scripts/build_release_zip.py` from the files Git tracks under `custom_components/wattpilot/` (at the zip root), and the build fails when a required file, the card bundle `frontend.py` serves, or a frontend import is missing, or when `manifest.json` does not match the release tag. The README explains manual installation from the zip and how to verify it.
+
 ### Fixed
 
 - **Entities no longer drop to unavailable every ~20 seconds** ([#188](https://github.com/tinkerologie/ha-wattpilot/issues/188)). A charger on both Ethernet and Wi-Fi announces both addresses over zeroconf, in varying order. Since 2026.10.2, each announcement could switch the stored address, and each switch reloaded the integration, so every entity went unavailable for about 2 seconds and `car_connected` automations fired again. Discovery now keeps the configured address while the charger still announces it, changes it only when the charger has moved, and ignores link-local (169.254.x.x) addresses.
@@ -19,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Availability is logged once per change, with its reason, instead of on every state write.
 - Diagnostics include the coordinator state (`last_update_success`, consecutive failures) and the `websockets` version. The README lists what to collect for dropout reports.
 - Tests fail on deprecated use by the integration: `DeprecationWarning` and `PendingDeprecationWarning` raised from its modules are errors, and Home Assistant deprecation reports that name `wattpilot` (all three log formats) fail the test that logged them. `scripts/import_smoke.py` imports every module in a clean interpreter. A weekly, non-blocking **HA Next** workflow runs the import check, the tests (when a matching test harness exists) and Hassfest against the newest Home Assistant on PyPI (beta included) and against Core `dev`, keeping one `ha-next` and `bug` issue per channel. A weekly developer blog watch opens an `ha-dev-blog` and `enhancement` issue for each post that names code the integration uses. `scripts/hassfest` runs Hassfest from a Home Assistant Core checkout, including Home Assistant 2026.11's packaged validator ([#190](https://github.com/tinkerologie/ha-wattpilot/issues/190)).
+- **Release workflow**: a build job builds and attests the zip, then a publish job checks the checksum and attestation, creates a draft release with `wattpilot.zip`, `SHA256SUMS` and `CHANGELOG.md`, publishes it and verifies the immutable release. Release notes still come from the version's `CHANGELOG.md` section. Pull request CI builds the zip twice and checks that the bytes match.
 
 ### Security
 

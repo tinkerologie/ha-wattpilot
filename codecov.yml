@@ -24,6 +24,7 @@ flags:
   python:
     paths:
       - custom_components/wattpilot/
+      - scripts/
     carryforward: true
   frontend:
     paths:

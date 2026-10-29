@@ -70,7 +70,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["custom_components/wattpilot"]
+source = ["custom_components/wattpilot", "scripts"]
 omit = [
     "tests/*",
 ]
@@ -92,4 +92,4 @@ fail_under = 90
 [tool.mypy]
 python_version = "3.14"
 strict = true
-files = ["custom_components/wattpilot"]
+files = ["custom_components/wattpilot", "scripts/build_release_zip.py"]
