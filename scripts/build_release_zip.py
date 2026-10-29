@@ -270,13 +270,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         zip_path = build_release(args.output_dir, version=args.version)
     except ReleaseZipError as err:
-        print(f"Error: {err}", file=sys.stderr)  # noqa: T201 - CLI output
+        print(f"Error: {err}", file=sys.stderr)
         return 1
 
     digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
     with zipfile.ZipFile(zip_path) as archive:
         count = len(archive.namelist())
-    print(f"Built {zip_path} ({count} files, sha256 {digest})")  # noqa: T201 - CLI output
+    print(f"Built {zip_path} ({count} files, sha256 {digest})")
     return 0
 
 
