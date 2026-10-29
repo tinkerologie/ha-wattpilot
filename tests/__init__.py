@@ -4,11 +4,24 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
+from .fixtures.deprecations import install_deprecation_report_handler
+
+# Before anything imports the integration, so import-time reports are caught too.
+install_deprecation_report_handler()
+
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_FRIENDLY_NAME, CONF_IP_ADDRESS, CONF_PASSWORD
+from homeassistant.const import (
+    CONF_FRIENDLY_NAME,
+    CONF_IP_ADDRESS,
+    CONF_PASSWORD,
+)
 from homeassistant.core import HomeAssistant
 
-from custom_components.wattpilot.const import CONF_CONNECTION, CONF_LOCAL, DOMAIN
+from custom_components.wattpilot.const import (
+    CONF_CONNECTION,
+    CONF_LOCAL,
+    DOMAIN,
+)
 
 
 async def setup_wattpilot_integration(

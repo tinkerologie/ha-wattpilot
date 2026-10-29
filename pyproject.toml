@@ -53,8 +53,12 @@ override-dependencies = ["pillow>=13.0.0"]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+# Deprecation warnings attributed to the integration's own modules are errors.
+# The module field is a regex matched from the start of the warning's module, so
+# it covers every submodule; third-party deprecations keep the default action.
 filterwarnings = [
-    "ignore::DeprecationWarning",
+    'error::DeprecationWarning:custom_components\.wattpilot(\.|$)',
+    'error::PendingDeprecationWarning:custom_components\.wattpilot(\.|$)',
 ]
 addopts = [
     "-v",

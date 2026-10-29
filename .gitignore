@@ -67,3 +67,6 @@ coverage.xml
 # Frontend (dashboard cards)
 frontend/node_modules/
 frontend/coverage/
+
+# Home Assistant Core checkout used by scripts/hassfest
+.local/
