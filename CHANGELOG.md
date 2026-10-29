@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2026.10.3] - 2026-10-30
+
 ### Added
 
 - **Release zip** ([#189](https://github.com/tinkerologie/ha-wattpilot/issues/189)): each release ships `wattpilot.zip`, a `SHA256SUMS` file and a signed build provenance attestation. `hacs.json` sets `zip_release` and `filename`, so HACS and the Marketplace install the zip and show how often the latest release was downloaded. The zip is built reproducibly by `scripts/build_release_zip.py` from the files Git tracks under `custom_components/wattpilot/` (at the zip root), and the build fails when a required file, the card bundle `frontend.py` serves, or a frontend import is missing, or when `manifest.json` does not match the release tag. The README explains manual installation from the zip and how to verify it.
