@@ -162,6 +162,8 @@ automation:
 
 **Entities unavailable**: check the logs, then use the `wattpilot.reconnect_charger` action or reload the integration.
 
+**Entities drop to unavailable every few seconds**: a charger on both Ethernet and Wi-Fi announces two addresses. Version 2026.10.2 could switch between them and reload the integration each time. Update to the latest version, or turn off the interface you don't use in the Wattpilot app.
+
 **Cards not in the card picker**: reload the browser with a cleared cache. The card bundle is served from `/wattpilot/wattpilot-cards.js`.
 
 ### Debug logging
@@ -172,7 +174,12 @@ logger:
   logs:
     custom_components.wattpilot: debug
     wattpilot_api: debug
+    websockets: info
 ```
+
+Debug logs contain the raw messages from the charger, including your Wi-Fi networks and charger settings. Remove anything private before you share a log.
+
+When you report dropouts, include the debug log around a dropout and the diagnostics download (**Settings → Devices & services → Fronius Wattpilot → ⋮ → Download diagnostics**). The log shows each availability change once, with its reason (`unavailable because charger disconnected`, `… coordinator unavailable`), any address change from discovery (`moved from … to …`), and when the connection closes. The diagnostics show `coordinator.last_update_success` and the `websockets` version.
 
 ## Contributing
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
@@ -1146,3 +1147,155 @@ class TestChargerPlatformEntity:
         ) as mock_super_update:
             entity._handle_coordinator_update()
             mock_super_update.assert_called_once()
+
+    @pytest.mark.parametrize(
+        "case",
+        [
+            ("val", True, False),
+            ("unavailable", False, False),
+            ("val", False, True),
+            ("unavailable", True, True),
+        ],
+    )
+    def test_handle_coordinator_update_writes_only_availability_changes(
+        self,
+        mock_hass: HomeAssistant,
+        mock_config_entry: Any,
+        mock_charger: MagicMock,
+        case: tuple[str, bool, bool],
+    ) -> None:
+        """Property entities rewrite state only when availability changes (#187)."""
+        shown_state, available, writes = case
+        mock_charger.all_properties = {"test_prop": "val"}
+        desc = WattpilotSensorEntityDescription(
+            key="test",
+            charger_key="test_prop",
+            name="Test",
+            source=SOURCE_PROPERTY,
+        )
+        entity = ChargerPlatformEntity(mock_hass, mock_config_entry, desc, mock_charger)
+        entity.entity_id = "sensor.test"
+        mock_hass.states.get = MagicMock(return_value=MagicMock(state=shown_state))
+        with (
+            patch.object(
+                ChargerPlatformEntity,
+                "available",
+                new_callable=PropertyMock,
+                return_value=available,
+            ),
+            patch(
+                "custom_components.wattpilot.entities.CoordinatorEntity._handle_coordinator_update"
+            ) as mock_super_update,
+        ):
+            entity._handle_coordinator_update()
+
+        assert mock_super_update.called is writes
+        mock_hass.states.get.assert_called_once_with("sensor.test")
+
+    def test_available_logs_transitions_only(
+        self,
+        mock_hass: HomeAssistant,
+        mock_config_entry: Any,
+        mock_charger: MagicMock,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Availability is logged once per change, not on every evaluation."""
+        mock_charger.all_properties = {"test_prop": "val"}
+        desc = WattpilotSensorEntityDescription(
+            key="test",
+            charger_key="test_prop",
+            name="Test",
+            source=SOURCE_PROPERTY,
+        )
+        entity = ChargerPlatformEntity(mock_hass, mock_config_entry, desc, mock_charger)
+        entity.coordinator.last_update_success = True
+        caplog.set_level(logging.DEBUG, logger="custom_components.wattpilot.entities")
+
+        mock_charger.connected = False
+        for _ in range(3):
+            assert entity.available is False
+        mock_charger.connected = True
+        for _ in range(3):
+            assert entity.available is True
+
+        messages = [r.getMessage() for r in caplog.records]
+        assert (
+            sum("unavailable because charger disconnected" in m for m in messages) == 1
+        )
+        assert sum("available again" in m for m in messages) == 1
+
+    @pytest.mark.parametrize(
+        "case",
+        [
+            (SOURCE_PROPERTY, {"p": 1}, "coordinator_down", "coordinator unavailable"),
+            (SOURCE_PROPERTY, {"p": 1}, "init_failed", "entity init not complete"),
+            (
+                SOURCE_PROPERTY,
+                {"p": 1},
+                "not_initialized",
+                "not all properties initialized",
+            ),
+            (SOURCE_PROPERTY, {"other": 1}, None, "unknown property"),
+            (SOURCE_PROPERTY, {"p": None}, None, "unknown property"),
+            (SOURCE_ATTRIBUTE, {}, "no_attribute", "unknown attribute"),
+            (
+                SOURCE_NAMESPACELIST,
+                {"p": "x"},
+                None,
+                "namespacelist is not a list/tuple (str)",
+            ),
+            (SOURCE_NAMESPACELIST, {"p": [None]}, None, "unknown namespacelist item 0"),
+            (SOURCE_PROPERTY, {"p": 1}, None, None),
+        ],
+    )
+    def test_unavailable_reason(
+        self,
+        mock_hass: HomeAssistant,
+        mock_config_entry: Any,
+        case: tuple[str, dict[str, Any], str | None, str | None],
+    ) -> None:
+        """Each availability gate reports its own reason."""
+        source, props, setup, reason = case
+        charger = MagicMock(connected=True, properties_initialized=True)
+        charger.all_properties = {"p": [1], "p0": 1}
+        charger.p = 1
+        desc_kwargs: dict[str, Any] = {
+            "key": "p",
+            "charger_key": "p",
+            "name": "P",
+            "source": source,
+        }
+        if source == SOURCE_NAMESPACELIST:
+            desc_kwargs["namespace_id"] = 0
+        desc = WattpilotSensorEntityDescription(**desc_kwargs)
+        entity = ChargerPlatformEntity(mock_hass, mock_config_entry, desc, charger)
+        entity.coordinator.last_update_success = True
+        charger.all_properties = props
+        if setup == "coordinator_down":
+            entity.coordinator.last_update_success = False
+        elif setup == "init_failed":
+            entity._init_failed = True
+        elif setup == "not_initialized":
+            charger.properties_initialized = False
+        elif setup == "no_attribute":
+            del charger.p
+
+        assert entity._unavailable_reason() == reason
+        assert entity.available is (reason is None)
+
+    def test_available_reads_all_properties_twice(
+        self, mock_hass: HomeAssistant, mock_config_entry: Any
+    ) -> None:
+        """One availability check copies the charger's property dict only twice."""
+        charger = MagicMock(connected=True, properties_initialized=True)
+        reads = PropertyMock(return_value={"car": 1})
+        type(charger).all_properties = reads
+        desc = WattpilotSensorEntityDescription(
+            key="car", charger_key="car", name="Car", source=SOURCE_PROPERTY
+        )
+        entity = ChargerPlatformEntity(mock_hass, mock_config_entry, desc, charger)
+        entity.coordinator.last_update_success = True
+        reads.reset_mock()
+
+        assert entity.available is True
+        assert reads.call_count == 2

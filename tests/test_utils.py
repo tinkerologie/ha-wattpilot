@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
 from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD
@@ -518,3 +518,30 @@ class TestChargerConnection:
 
         # Should log exception but not raise
         await async_DisconnectCharger("test_entry", mock_charger)
+
+
+@pytest.mark.parametrize(
+    ("identifier", "default", "expected"),
+    [("car", None, 2), ("missing", "x", "x"), ("none_value", "d", "d")],
+)
+async def test_property_helpers_read_all_properties_once(
+    identifier: str, default: Any, expected: Any
+) -> None:
+    """wattpilot-api copies the property dict on every read; read it once (#187)."""
+    charger = MagicMock()
+    reads = PropertyMock(return_value={"car": 2, "none_value": None})
+    type(charger).all_properties = reads
+
+    assert GetChargerProp(charger, identifier, default) == expected
+    assert reads.call_count == 1
+    reads.reset_mock()
+    assert await async_GetChargerProp(charger, identifier, default) == expected
+    assert reads.call_count == 1
+
+
+async def test_property_helpers_handle_none_all_properties() -> None:
+    """A charger whose all_properties is None returns the default."""
+    charger = MagicMock(all_properties=None)
+
+    assert GetChargerProp(charger, "car", 7) == 7
+    assert await async_GetChargerProp(charger, "car", 7) == 7

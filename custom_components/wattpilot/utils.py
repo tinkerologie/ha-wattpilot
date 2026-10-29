@@ -32,6 +32,8 @@ if TYPE_CHECKING:
 
 _LOGGER: Final = logging.getLogger(__name__)
 
+_MISSING: Final = object()
+
 
 async def async_property_update_handler(
     hass: HomeAssistant, entry: ConfigEntry, identifier: str, value: Any
@@ -106,21 +108,24 @@ async def async_GetChargerProp(
 ) -> Any:
     """Async: return the value of a charger attribute."""
     try:
-        if not hasattr(charger, "all_properties"):
+        # wattpilot-api returns a fresh copy on every read, so read it once.
+        all_props: Any = getattr(charger, "all_properties", _MISSING)
+        if all_props is _MISSING:
             _LOGGER.error(
                 "%s - async_GetChargerProp: missing all_properties: %s", DOMAIN, charger
             )
             return default
-        if identifier is None or identifier not in charger.all_properties:
+        if identifier is None or identifier not in all_props:
             _LOGGER.debug(
                 "%s - async_GetChargerProp: Charger does not have property: %s",
                 DOMAIN,
                 identifier,
             )
             return default
-        if charger.all_properties[identifier] is None and default is not None:
+        value = all_props[identifier]
+        if value is None and default is not None:
             return default
-        return charger.all_properties[identifier]
+        return value
     except Exception:
         _LOGGER.exception("%s - async_GetChargerProp: Could not get property", DOMAIN)
         return default
@@ -131,21 +136,24 @@ def GetChargerProp(
 ) -> Any:
     """Return the value of a charger attribute."""
     try:
-        if not hasattr(charger, "all_properties"):
+        # wattpilot-api returns a fresh copy on every read, so read it once.
+        all_props: Any = getattr(charger, "all_properties", _MISSING)
+        if all_props is _MISSING:
             _LOGGER.error(
                 "%s - GetChargerProp: missing all_properties: %s", DOMAIN, charger
             )
             return default
-        if identifier is None or identifier not in charger.all_properties:
+        if identifier is None or identifier not in all_props:
             _LOGGER.debug(
                 "%s - GetChargerProp: Charger does not have property: %s",
                 DOMAIN,
                 identifier,
             )
             return default
-        if charger.all_properties[identifier] is None and default is not None:
+        value = all_props[identifier]
+        if value is None and default is not None:
             return default
-        return charger.all_properties[identifier]
+        return value
     except Exception:
         _LOGGER.exception("%s - GetChargerProp: Could not get property", DOMAIN)
         return default

@@ -6,7 +6,7 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING, Any, Final, cast
 
-from homeassistant.const import STATE_UNKNOWN
+from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -220,6 +220,7 @@ class ChargerPlatformEntity(CoordinatorEntity["WattpilotCoordinator"]):
 
     _attr_has_entity_name = True
     _state_attr = "state"
+    _last_unavailable_reason: str | None = None
 
     def __init__(
         self,
@@ -354,9 +355,19 @@ class ChargerPlatformEntity(CoordinatorEntity["WattpilotCoordinator"]):
 
     @callback
     def _handle_coordinator_update(self) -> None:
-        """Handle updated data from the coordinator."""
+        """
+        Handle updated data from the coordinator.
+
+        Every pushed property notifies every entity. Property-backed entities get
+        their own values through async_local_push, so here they only write state
+        when their availability differs from what Home Assistant shows (#187).
+        """
         if self._source == SOURCE_ATTRIBUTE:
             self.hass.async_create_task(self.async_local_poll())
+            return
+        state = self.hass.states.get(self.entity_id) if self.entity_id else None
+        shown_available = state is not None and state.state != STATE_UNAVAILABLE
+        if state is not None and self.available == shown_available:
             return
         super()._handle_coordinator_update()
 
@@ -409,93 +420,62 @@ class ChargerPlatformEntity(CoordinatorEntity["WattpilotCoordinator"]):
     @property
     def available(self) -> bool:
         """Return if device is available."""
-        # Use getattr for _charger_id and _identifier in case init failed early
-        charger_id = getattr(self, "_charger_id", "unknown")
-        identifier = getattr(self, "_identifier", "unknown")
+        reason = self._unavailable_reason()
+        if reason != self._last_unavailable_reason:
+            # Log transitions only: availability is evaluated on every state write.
+            self._last_unavailable_reason = reason
+            if reason is None:
+                _LOGGER.debug(
+                    "%s - %s: available again",
+                    getattr(self, "_charger_id", "unknown"),
+                    getattr(self, "_identifier", "unknown"),
+                )
+            else:
+                _LOGGER.debug(
+                    "%s - %s: unavailable because %s",
+                    getattr(self, "_charger_id", "unknown"),
+                    getattr(self, "_identifier", "unknown"),
+                    reason,
+                )
+        return reason is None
 
+    def _unavailable_reason(self) -> str | None:
+        """Return why the entity is unavailable, or None when it is available."""
         if not super().available:
-            _LOGGER.debug(
-                "%s - %s: available: false because coordinator unavailable",
-                charger_id,
-                identifier,
-            )
-            return False
+            return "coordinator unavailable"
         if getattr(self, "_init_failed", True):
-            _LOGGER.debug(
-                "%s - %s: available: false because entity init not complete",
-                charger_id,
-                identifier,
-            )
-            return False
+            return "entity init not complete"
         if not getattr(self._charger, "connected", True):
-            _LOGGER.debug(
-                "%s - %s: available: false because charger disconnected",
-                charger_id,
-                identifier,
-            )
-            return False
+            return "charger disconnected"
         if not getattr(self._charger, "properties_initialized", True):
-            _LOGGER.debug(
-                "%s - %s: available: false because not all properties initialized",
-                charger_id,
-                identifier,
-            )
-            return False
+            return "not all properties initialized"
         if self._source == SOURCE_ATTRIBUTE and not hasattr(
             self._charger, self._identifier
         ):
-            _LOGGER.debug(
-                "%s - %s: available: false because unknown attribute",
-                charger_id,
-                identifier,
-            )
-            return False
+            return "unknown attribute"
         if self._source == SOURCE_PROPERTY:
             if not has_charger_prop(self._charger, self._identifier):
-                _LOGGER.debug(
-                    "%s - %s: available: false because unknown property",
-                    charger_id,
-                    identifier,
-                )
-                return False
+                return "unknown property"
             if (
                 GetChargerProp(self._charger, self._identifier, self._default_state)
                 is None
                 and getattr(self, "_state_enum", None) is None
             ):
-                _LOGGER.debug(
-                    "%s - %s: available: false because unknown property",
-                    charger_id,
-                    identifier,
-                )
-                return False
+                return "unknown property"
         if self._source == SOURCE_NAMESPACELIST:
             ns_val = GetChargerProp(
                 self._charger, self._identifier, self._default_state
             )
             # Treat non-list/tuple as unavailable
             if not isinstance(ns_val, (list, tuple)):
-                _LOGGER.debug(
-                    "%s - %s: available: false because namespacelist is not a list/tuple: %s[%s]",
-                    charger_id,
-                    identifier,
-                    self._namespace_id,
-                    type(ns_val).__name__,
-                )
-                return False
+                return f"namespacelist is not a list/tuple ({type(ns_val).__name__})"
             try:
                 ns_idx = int(self._namespace_id)
             except (TypeError, ValueError):
                 ns_idx = -1
             if ns_idx < 0 or ns_idx >= len(ns_val) or ns_val[ns_idx] is None:
-                _LOGGER.debug(
-                    "%s - %s: available: false because unknown namespacelist item: %s",
-                    self._charger_id,
-                    self._identifier,
-                    self._namespace_id,
-                )
-                return False
-        return True
+                return f"unknown namespacelist item {self._namespace_id}"
+        return None
 
     @property
     def should_poll(self) -> bool:

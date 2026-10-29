@@ -148,6 +148,43 @@ class TestDiagnostics:
             assert charger_info["firmware"] == "40.7"
 
     @pytest.mark.asyncio
+    async def test_diagnostics_contains_coordinator_and_transport(
+        self, mock_hass: MagicMock, mock_entry: MagicMock
+    ) -> None:
+        """Coordinator state and the websockets version help diagnose dropouts."""
+        mock_entry.runtime_data.coordinator.last_update_success = False
+        mock_entry.runtime_data.coordinator.failed_update_count = 2
+        with patch(
+            "custom_components.wattpilot.diagnostics.version", return_value="15.0.1"
+        ):
+            from custom_components.wattpilot.diagnostics import (
+                async_get_config_entry_diagnostics,
+            )
+
+            result = await async_get_config_entry_diagnostics(mock_hass, mock_entry)
+
+        assert result["coordinator"] == {
+            "last_update_success": False,
+            "failed_update_count": 2,
+        }
+        assert result["modules"]["websockets_version"] == "15.0.1"
+
+    @pytest.mark.asyncio
+    async def test_diagnostics_survives_missing_coordinator(
+        self, mock_hass: MagicMock, mock_entry: MagicMock
+    ) -> None:
+        """A runtime without a coordinator still returns diagnostics."""
+        del mock_entry.runtime_data.coordinator
+        from custom_components.wattpilot.diagnostics import (
+            async_get_config_entry_diagnostics,
+        )
+
+        result = await async_get_config_entry_diagnostics(mock_hass, mock_entry)
+
+        assert "coordinator" not in result
+        assert "modules" in result
+
+    @pytest.mark.asyncio
     async def test_diagnostics_handles_missing_charger(
         self, mock_hass: MagicMock
     ) -> None:
