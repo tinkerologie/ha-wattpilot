@@ -1225,7 +1225,7 @@ class TestChargerPlatformEntity:
         assert sum("available again" in m for m in messages) == 1
 
     @pytest.mark.parametrize(
-        ("source", "props", "setup", "reason"),
+        "case",
         [
             (SOURCE_PROPERTY, {"p": 1}, "coordinator_down", "coordinator unavailable"),
             (SOURCE_PROPERTY, {"p": 1}, "init_failed", "entity init not complete"),
@@ -1248,16 +1248,14 @@ class TestChargerPlatformEntity:
             (SOURCE_PROPERTY, {"p": 1}, None, None),
         ],
     )
-    def test_unavailable_reason(  # noqa: PLR0913
+    def test_unavailable_reason(
         self,
         mock_hass: HomeAssistant,
         mock_config_entry: Any,
-        source: str,
-        props: dict[str, Any],
-        setup: str | None,
-        reason: str | None,
+        case: tuple[str, dict[str, Any], str | None, str | None],
     ) -> None:
         """Each availability gate reports its own reason."""
+        source, props, setup, reason = case
         charger = MagicMock(connected=True, properties_initialized=True)
         charger.all_properties = {"p": [1], "p0": 1}
         charger.p = 1
