@@ -132,7 +132,9 @@ else
     if is_commit_sha "$HA_VERSION_TAG"; then
         CURRENT_VERSION=$(git rev-parse HEAD 2>/dev/null || true)
     else
-        CURRENT_VERSION=$(git describe --tags --exact-match 2>/dev/null || git rev-parse --abbrev-ref HEAD)
+        # An empty repository left by a failed first clone has no HEAD; an empty
+        # version differs from the target, so the checkout is retried.
+        CURRENT_VERSION=$(git describe --tags --exact-match 2>/dev/null || git rev-parse --abbrev-ref HEAD 2>/dev/null || true)
     fi
     cd - >/dev/null
 

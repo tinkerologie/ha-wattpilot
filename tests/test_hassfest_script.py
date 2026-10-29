@@ -214,3 +214,17 @@ def test_missing_revision_fails(tmp_path: Path) -> None:
     assert result.returncode == 1
     assert "could not be checked out" in result.stdout + result.stderr
     assert not [call for call in project.calls() if "script.hassfest" in call]
+
+
+def test_failed_first_clone_is_retried(tmp_path: Path) -> None:
+    """A cache left empty by a failed first clone does not block the next run."""
+    project = _project(tmp_path, packaged=True)
+    project.env["HA_VERSION"] = "1999.1.0"
+    assert project.run().returncode == 1
+
+    project.env["HA_VERSION"] = TAG
+    result = project.run()
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert f"Updating to version {TAG}" in result.stdout
+    assert "--with-editable" in project.hassfest_call()

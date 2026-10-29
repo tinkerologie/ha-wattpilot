@@ -271,3 +271,10 @@ class _FrozenDatetime(datetime):
     @classmethod
     def now(cls, tz: Any = None) -> datetime:  # noqa: ARG003
         return NOW
+
+
+@pytest.mark.parametrize("url", ["file:///etc/passwd", "http://example.invalid/"])
+def test_fetch_url_refuses_non_https(blog: Any, url: str) -> None:
+    """A tampered feed link cannot make the runner read a local file or plain http."""
+    with pytest.raises(OSError, match="Refusing non-https URL"):
+        blog.fetch_url(url)

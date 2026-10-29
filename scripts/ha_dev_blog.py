@@ -26,12 +26,14 @@ import html
 import json
 import re
 import sys
+import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from urllib.parse import urlparse
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_DIR = REPO_ROOT / "custom_components" / "wattpilot"
@@ -79,8 +81,16 @@ class Post:
 
 
 def fetch_url(url: str) -> str:
-    """Return the body of ``url`` as text."""
-    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})  # noqa: S310 - fixed https URLs
+    """
+    Return the body of ``url`` as text.
+
+    Post links come from the feed, so only https is fetched: ``urlopen`` would
+    also read ``file:`` and ``ftp:`` URLs.
+    """
+    if urlparse(url).scheme != "https":
+        message = f"Refusing non-https URL: {url}"
+        raise urllib.error.URLError(message)
+    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})  # noqa: S310 - https only, checked above
     with urllib.request.urlopen(request, timeout=30) as response:  # noqa: S310
         return response.read().decode("utf-8", errors="replace")
 
