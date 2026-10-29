@@ -230,6 +230,9 @@ jobs:
 
       - name: Open, update or close the ha-next issues
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          # A manual run pinned to a release version did not test the newest one.
+          PINNED_VERSION: ${{ inputs.ha_version }}
         with:
           script: |
             const fs = require("node:fs");
@@ -264,7 +267,15 @@ jobs:
               const issue = open.find((item) => !item.pull_request && item.body?.includes(marker));
 
               if (result.status === "success") {
-                if (issue) {
+                if (issue && channel === "release" && process.env.PINNED_VERSION) {
+                  // Only a run against the newest release may close its issue.
+                  await github.rest.issues.createComment({
+                    owner,
+                    repo,
+                    issue_number: issue.number,
+                    body: `Home Assistant ${result.version} (pinned) passes; this issue stays open until the newest release passes: ${runUrl}`,
+                  });
+                } else if (issue) {
                   await github.rest.issues.createComment({
                     owner,
                     repo,

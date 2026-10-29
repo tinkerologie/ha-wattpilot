@@ -72,6 +72,8 @@ def _core_origin(path: Path, *, packaged: bool) -> Path:
         "pyproject.toml": "[project]\nname = 'homeassistant'\n",
         "homeassistant/const.py": "__version__ = '2026.10.2'\n",
         "script/hassfest/__main__.py": "# Synthetic validator\n",
+        "requirements.txt": "packaging>=23.1\n",
+        "requirements_all.txt": "# All requirements\n",
         "tests/excluded.py": "# Outside the sparse checkout\n",
     }
     if packaged:
@@ -228,3 +230,32 @@ def test_failed_first_clone_is_retried(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stdout + result.stderr
     assert f"Updating to version {TAG}" in result.stdout
     assert "--with-editable" in project.hassfest_call()
+
+
+def test_validator_reads_core_requirement_files(tmp_path: Path) -> None:
+    """Hassfest gets Core's path, so its requirements plugin checks something."""
+    project = _project(tmp_path, packaged=True)
+
+    result = project.run()
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    core = project.root / ".local" / "ha-core"
+    call = project.hassfest_call()
+    assert call[call.index("--core-path") + 1] == str(core)
+    assert (core / "requirements.txt").is_file()
+    assert (core / "requirements_all.txt").is_file()
+
+
+def test_update_advances_a_cached_dev_checkout(tmp_path: Path) -> None:
+    """--update on Core dev validates the newest dev commit, not the cached one."""
+    project = _project(tmp_path, packaged=True)
+    project.env["HA_VERSION"] = "dev"
+    assert project.run().returncode == 0
+    (project.origin / "homeassistant" / "const.py").write_text("__version__ = 'next'\n")
+    _git(project.origin, "commit", "-q", "-am", "Next")
+    newest = _git(project.origin, "rev-parse", "HEAD")
+
+    result = project.run("--update")
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert _git(project.root / ".local" / "ha-core", "rev-parse", "HEAD") == newest

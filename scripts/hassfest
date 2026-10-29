@@ -95,7 +95,8 @@ is_commit_sha() {
 checkout_core_revision() {
     if [ "$HA_VERSION_TAG" = "dev" ]; then
         git fetch --depth 1 --filter=blob:none origin dev 2>&1 | grep -E "(Receiving|Resolving|Fetching)" || true
-        git checkout dev >/dev/null 2>&1
+        # -B moves a cached dev branch to the fetched commit, so --update refreshes it.
+        git checkout -B dev FETCH_HEAD >/dev/null 2>&1
     elif is_commit_sha "$HA_VERSION_TAG"; then
         git fetch --depth 1 --filter=blob:none origin "$HA_VERSION_TAG" 2>&1 | grep -E "(Receiving|Resolving|Fetching)" || true
         git checkout --detach FETCH_HEAD >/dev/null 2>&1
@@ -153,7 +154,8 @@ fi
 # core into packages/hassfest, whose setup.py reads Core's pyproject.toml; older
 # revisions have no packages/hassfest, which is harmless.
 git -C "$HA_CORE_DIR" sparse-checkout set --no-cone \
-    /script/ /homeassistant/ /packages/hassfest/ /pyproject.toml
+    /script/ /homeassistant/ /packages/hassfest/ /pyproject.toml \
+    /requirements.txt /requirements_all.txt
 if [ ! -f "$HA_CORE_DIR/script/hassfest/__main__.py" ]; then
     core_checkout_failed
 fi
@@ -196,6 +198,9 @@ HASSFEST_CMD+=(
     python3 -m script.hassfest
     --action validate
     --integration-path "$PWD/$INTEGRATION_PATH"
+    # The requirements plugin reads Core's requirement files from here; without
+    # it, it reads them from this repository and silently checks nothing.
+    --core-path "$PWD/$HA_CORE_DIR"
 )
 
 # Add skip-plugins if specified

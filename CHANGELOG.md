@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The manifest no longer lists `packaging`. Home Assistant already depends on it, and Home Assistant 2026.11's Hassfest rejects a custom integration that lists one of Home Assistant's own dependencies ([#190](https://github.com/tinkerologie/ha-wattpilot/issues/190)).
 - Availability is logged once per change, with its reason, instead of on every state write.
 - Diagnostics include the coordinator state (`last_update_success`, consecutive failures) and the `websockets` version. The README lists what to collect for dropout reports.
 - Tests fail on deprecated use by the integration: `DeprecationWarning` and `PendingDeprecationWarning` raised from its modules are errors, and Home Assistant deprecation reports that name `wattpilot` (all three log formats) fail the test that logged them. `scripts/import_smoke.py` imports every module in a clean interpreter. A weekly, non-blocking **HA Next** workflow runs the import check, the tests (when a matching test harness exists) and Hassfest against the newest Home Assistant on PyPI (beta included) and against Core `dev`, keeping one `ha-next` and `bug` issue per channel. A weekly developer blog watch opens an `ha-dev-blog` and `enhancement` issue for each post that names code the integration uses. `scripts/hassfest` runs Hassfest from a Home Assistant Core checkout, including Home Assistant 2026.11's packaged validator ([#190](https://github.com/tinkerologie/ha-wattpilot/issues/190)).
