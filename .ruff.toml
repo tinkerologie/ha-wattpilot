@@ -50,6 +50,10 @@ ignore = [
 fixture-parentheses = false
 
 [lint.per-file-ignores]
+"scripts/*.py" = [
+    "T201",    # Command-line tools report on stdout
+    "PLC0415", # import_smoke imports Home Assistant only when it runs
+]
 "tests/**/*.py" = [
     "S101",   # Use of assert detected (expected in tests)
     "S105",   # Hardcoded password comparison (test fixtures)

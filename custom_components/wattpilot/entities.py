@@ -40,6 +40,22 @@ if TYPE_CHECKING:
 _LOGGER: Final = logging.getLogger(__name__)
 
 
+@callback
+def async_delegate_entity_id_changed(parent: Any, old_entity_id: str) -> None:
+    """
+    Run the parent's ``async_entity_id_changed``, when Home Assistant has one.
+
+    Home Assistant 2026.11 changes an entity's ID in place, but re-adds an
+    entity of a custom integration whose class overrides an add or remove hook
+    unless that class also defines ``async_entity_id_changed``; Home Assistant
+    2027.11 drops the re-add. Each such class defines the hook and passes
+    ``super()`` from it, so the MRO reaches Home Assistant's own bookkeeping.
+    Before 2026.11 the parent has no hook to call.
+    """
+    if (hook := getattr(parent, "async_entity_id_changed", None)) is not None:
+        hook(old_entity_id)
+
+
 def check_firmware_supported(
     charger: Any,
     firmware_constraint: str | None,
@@ -510,6 +526,11 @@ class ChargerPlatformEntity(CoordinatorEntity["WattpilotCoordinator"]):
             sw_version=getattr(self._charger, "firmware", None),
             hw_version=f"{variant} KW" if variant else None,
         )
+
+    @callback
+    def async_entity_id_changed(self, old_entity_id: str) -> None:
+        """Keep the entity on an entity ID change; nothing here is keyed on it."""
+        async_delegate_entity_id_changed(super(), old_entity_id)
 
     async def async_update(self) -> None:
         """Async: Get latest data and states for the entity."""

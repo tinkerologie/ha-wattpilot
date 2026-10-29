@@ -10,7 +10,7 @@ from homeassistant.const import (
     CONF_FRIENDLY_NAME,
     CONF_IP_ADDRESS,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.util import dt as dt_util
 
 from .const import DEFAULT_NAME
@@ -18,7 +18,11 @@ from .descriptions import (
     BUTTON_DESCRIPTIONS,
     WattpilotButtonEntityDescription,
 )
-from .entities import ChargerPlatformEntity, filter_descriptions
+from .entities import (
+    ChargerPlatformEntity,
+    async_delegate_entity_id_changed,
+    filter_descriptions,
+)
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -78,6 +82,11 @@ class ChargerButton(ChargerPlatformEntity, ButtonEntity):
                 self._identifier,
             )
             self._init_failed = True
+
+    @callback
+    def async_entity_id_changed(self, old_entity_id: str) -> None:
+        """Keep the entity on an entity ID change; nothing here is keyed on it."""
+        async_delegate_entity_id_changed(super(), old_entity_id)
 
     async def async_added_to_hass(self) -> None:
         """

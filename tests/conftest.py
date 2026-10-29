@@ -10,6 +10,7 @@ import pytest
 from wattpilot_api import exceptions as _exceptions
 
 from .fixtures import get_charger_properties
+from .fixtures.deprecations import HANDLER as DEPRECATION_REPORTS
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -86,6 +87,26 @@ from custom_components.wattpilot.const import (
     CONF_SERIAL,
     DOMAIN,
 )
+
+
+@pytest.fixture(autouse=True)
+def fail_on_ha_deprecation_reports() -> Generator[None]:
+    """
+    Fail when Home Assistant logs deprecated use by this integration.
+
+    Home Assistant logs, rather than warns, when an integration calls a
+    deprecated API or an entity class defines a deprecated attribute. Autouse
+    fixtures are set up first, so this one is torn down after ``hass``, and
+    reports logged while Home Assistant stops still count. Reports logged while
+    modules were imported surface on the first test.
+    """
+    yield
+    if reports := DEPRECATION_REPORTS.pop_reports():
+        pytest.fail(
+            "Home Assistant reported deprecated use by wattpilot:\n"
+            + "\n".join(reports),
+            pytrace=False,
+        )
 
 
 @pytest.fixture
@@ -177,6 +198,10 @@ def mock_charger() -> MagicMock:
     charger.properties_initialized = True
     charger.manufacturer = "Fronius"
     charger.device_type = properties.get("typ", "go-eCharger HOME+ 11kW")
+    # Strings like the library's, not MagicMock attributes: Home Assistant
+    # reports a non-string model passed to the device registry.
+    charger.model = charger.device_type
+    charger.variant = properties.get("var", 11)
     charger.hostname = f"wattpilot-{charger.serial}"
 
     # Mock all_properties dictionary with properties from fixture

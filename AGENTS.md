@@ -118,6 +118,7 @@ Wattpilot WebSocket (push) → async_property_update_handler → Coordinator →
 - Supports filtering by firmware version, device variant, and connection type
 - Properties can be sourced from `property` (charger properties), `attribute` (charger attributes), or `namespacelist`
 - Uses `GetChargerProp` and `async_GetChargerProp` utilities to access charger data
+- Any entity class that overrides `async_added_to_hass` (or another add/remove hook) must also define `async_entity_id_changed` and call `async_delegate_entity_id_changed(super(), old_entity_id)`, so Home Assistant 2026.11+ changes its entity ID in place; `tests/test_entity_id_changed.py` enforces this
 
 **Platform Implementation Pattern**
 Each platform (sensor, switch, button, number, select, update) follows this pattern:
@@ -191,6 +192,7 @@ unsub = charger.on_property_change(async_callback)  # Subscribe to updates
 - Use `pytest-homeassistant-custom-component` for Home Assistant test utilities
 - Tests are in `tests/` and mirror the structure of `custom_components/wattpilot/`
 - Async tests use `pytest-asyncio` with `asyncio_mode = "auto"`
+- Deprecations attributed to the integration fail tests (`filterwarnings` and the autouse `fail_on_ha_deprecation_reports` fixture); see the deprecations section of `CONTRIBUTING.md`
 
 ## Important Files
 
