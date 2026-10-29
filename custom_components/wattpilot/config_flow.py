@@ -49,6 +49,27 @@ def _valid_ip(value: str) -> bool:
     return True
 
 
+def _usable_ipv4_hosts(discovery_info: ZeroconfServiceInfo) -> list[str]:
+    """
+    Return the announced IPv4 addresses the client can connect to, in order.
+
+    The client connects over IPv4; dual-stack chargers may list IPv6 first.
+    Link-local (169.254.0.0/16) addresses of an unconfigured interface are skipped.
+    """
+    hosts: list[str] = []
+    for address in (discovery_info.ip_address, *discovery_info.ip_addresses):
+        if (
+            not isinstance(address, ipaddress.IPv4Address)
+            or address.is_link_local
+            or address.is_loopback
+            or address.is_unspecified
+        ):
+            continue
+        if (host := str(address)) not in hosts:
+            hosts.append(host)
+    return hosts
+
+
 class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
     """Config flow for a Wattpilot charger over the LAN or the Fronius cloud."""
 
@@ -92,32 +113,36 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Handle a Wattpilot announcing itself over mDNS."""
         serial = str(discovery_info.properties.get("serial") or "")
-        # The client connects over IPv4; dual-stack chargers may list IPv6 first.
-        ipv4 = next(
-            (
-                address
-                for address in (discovery_info.ip_address, *discovery_info.ip_addresses)
-                if isinstance(address, ipaddress.IPv4Address)
-            ),
-            None,
-        )
-        if not serial or ipv4 is None:
+        hosts = _usable_ipv4_hosts(discovery_info)
+        if not serial or not hosts:
             return self.async_abort(reason="not_wattpilot")
-        host = str(ipv4)
+        host = hosts[0]
 
         await self.async_set_unique_id(serial)
         entry = self.hass.config_entries.async_entry_for_domain_unique_id(
             DOMAIN, serial
         )
-        if (
-            entry is not None
-            and entry.data.get(CONF_CONNECTION, CONF_LOCAL) != CONF_LOCAL
-        ):
-            return self.async_abort(reason="already_configured")
+        if entry is not None:
+            if entry.data.get(CONF_CONNECTION, CONF_LOCAL) != CONF_LOCAL:
+                return self.async_abort(reason="already_configured")
+            configured = str(entry.data.get(CONF_IP_ADDRESS, ""))
+            if configured in hosts:
+                # A charger on Ethernet and Wi-Fi announces both addresses, in
+                # varying order. Changing the address reloads the entry, so keep
+                # the configured one while the charger still answers on it (#188).
+                host = configured
+            else:
+                _LOGGER.info(
+                    "Wattpilot %s moved from %s to %s; updating its address",
+                    serial,
+                    configured or "an unknown address",
+                    host,
+                )
         # Keep the address of a configured local charger current (DHCP changes).
         self._abort_if_unique_id_configured(updates={CONF_IP_ADDRESS: host})
         # Entries created before 2026.10.2 may still be keyed by IP address.
-        self._async_abort_entries_match({CONF_IP_ADDRESS: host})
+        for address in hosts:
+            self._async_abort_entries_match({CONF_IP_ADDRESS: address})
 
         name = str(discovery_info.properties.get("friendly_name") or DEFAULT_NAME)
         self._discovered = {"name": name, "host": host, "serial": serial}

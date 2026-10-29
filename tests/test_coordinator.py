@@ -266,3 +266,16 @@ class TestCoordinatorAsync:
 
             with pytest.raises(UpdateFailed):
                 await coord._async_update_data()
+
+
+async def test_failed_update_count_is_exposed(hass: HomeAssistant) -> None:
+    """Diagnostics read the consecutive failure count through a public property."""
+    from homeassistant.helpers.update_coordinator import UpdateFailed
+
+    charger = MagicMock(connected=False, properties_initialized=False)
+    coordinator = WattpilotCoordinator(hass, charger, MagicMock())
+
+    with pytest.raises(UpdateFailed):
+        await coordinator._async_update_data()
+
+    assert coordinator.failed_update_count == 1

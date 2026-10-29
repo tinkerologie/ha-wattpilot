@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Entities no longer drop to unavailable every ~20 seconds** ([#188](https://github.com/tinkerologie/ha-wattpilot/issues/188)). A charger on both Ethernet and Wi-Fi announces both addresses over zeroconf, in varying order. Since 2026.10.2, each announcement could switch the stored address, and each switch reloaded the integration, so every entity went unavailable for about 2 seconds and `car_connected` automations fired again. Discovery now keeps the configured address while the charger still announces it, changes it only when the charger has moved, and ignores link-local (169.254.x.x) addresses.
+- **Less work on every property push** ([#187](https://github.com/tinkerologie/ha-wattpilot/issues/187)), following the "Updating state for …plug_connected took 0.530 seconds" warning. Every pushed property notified every entity, and each property-backed entity rewrote its unchanged state. They now write only when their availability changes; their values still arrive through their own push. One availability check now copies the charger's property dictionary twice instead of five times.
+
+### Changed
+
+- Availability is logged once per change, with its reason, instead of on every state write.
+- Diagnostics include the coordinator state (`last_update_success`, consecutive failures) and the `websockets` version. The README lists what to collect for dropout reports.
+
 ### Security
 
 - Development and test environments now use Pillow 13.0.0 (via a uv override), fixing the 33 Pillow security advisories reported by Dependabot against `uv.lock` ([#183](https://github.com/tinkerologie/ha-wattpilot/issues/183)). Pillow comes in only through the `homeassistant` dev dependency, which still pins 12.3.0; the integration itself does not use or ship Pillow.

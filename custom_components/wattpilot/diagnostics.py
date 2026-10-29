@@ -98,6 +98,22 @@ async def async_get_config_entry_diagnostics(
             type(e).__name__,
         )
 
+    # Add coordinator state, to tell connection drops from refresh failures
+    try:
+        coordinator = entry.runtime_data.coordinator
+        diag["coordinator"] = {
+            "last_update_success": coordinator.last_update_success,
+            "failed_update_count": coordinator.failed_update_count,
+        }
+    except Exception as e:
+        _LOGGER.error(
+            "%s - diagnostics: Adding coordinator state failed: %s (%s.%s)",
+            entry.entry_id,
+            str(e),
+            e.__class__.__module__,
+            type(e).__name__,
+        )
+
     # Add python modules versions
     try:
         _LOGGER.debug(
@@ -108,6 +124,7 @@ async def async_get_config_entry_diagnostics(
         for package_name, key in (
             ("wattpilot-api", "wattpilot_api_version"),
             ("packaging", "packaging"),
+            ("websockets", "websockets_version"),
         ):
             try:
                 modules[key] = version(package_name)

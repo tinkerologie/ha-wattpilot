@@ -63,6 +63,11 @@ class WattpilotCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
 
     @property
+    def failed_update_count(self) -> int:
+        """Return how many refreshes failed in a row."""
+        return self._failed_update_count
+
+    @property
     def available(self) -> bool:
         """Return if the charger is available."""
         return bool(

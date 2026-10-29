@@ -450,3 +450,89 @@ async def test_zeroconf_prefers_ipv4_from_dual_stack_announcement(
 
     assert result["step_id"] == "zeroconf_confirm"
     assert result["description_placeholders"]["host"] == "192.168.1.77"
+
+
+async def test_zeroconf_keeps_address_announced_among_several(
+    hass: HomeAssistant, config_entry: MockConfigEntry, no_entry_setup: AsyncMock
+) -> None:
+    """
+    A charger on Ethernet and Wi-Fi announces both addresses in varying order.
+
+    The configured address is kept, so repeated announcements never reload the
+    entry and its entities don't drop to unavailable (#188).
+    """
+    from ipaddress import ip_address
+
+    from homeassistant.config_entries import SOURCE_ZEROCONF
+
+    config_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+    no_entry_setup.reset_mock()
+
+    for order in (
+        ["192.168.1.55", "192.168.1.100"],
+        ["192.168.1.100", "192.168.1.55"],
+        ["192.168.1.55", "192.168.1.100"],
+    ):
+        info = _zeroconf(order[0])
+        info.ip_addresses = [ip_address(host) for host in order]
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": SOURCE_ZEROCONF}, data=info
+        )
+        await hass.async_block_till_done()
+
+        assert result["reason"] == "already_configured"
+        assert config_entry.data["ip_address"] == "192.168.1.100"
+
+    no_entry_setup.assert_not_called()
+
+
+async def test_zeroconf_reloads_once_when_address_really_changes(
+    hass: HomeAssistant, config_entry: MockConfigEntry, no_entry_setup: AsyncMock
+) -> None:
+    """A charger that is no longer reachable at its address is moved and reloaded."""
+    from homeassistant.config_entries import SOURCE_ZEROCONF
+
+    config_entry.add_to_hass(hass)
+    with patch(
+        "custom_components.wattpilot.async_unload_entry", AsyncMock(return_value=True)
+    ):
+        assert await hass.config_entries.async_setup(config_entry.entry_id)
+        await hass.async_block_till_done()
+        no_entry_setup.reset_mock()
+
+        for _ in range(2):
+            result = await hass.config_entries.flow.async_init(
+                DOMAIN,
+                context={"source": SOURCE_ZEROCONF},
+                data=_zeroconf("192.168.1.42"),
+            )
+            await hass.async_block_till_done()
+            assert result["reason"] == "already_configured"
+
+    assert config_entry.data["ip_address"] == "192.168.1.42"
+    no_entry_setup.assert_called_once()
+
+
+async def test_zeroconf_skips_link_local_addresses(
+    hass: HomeAssistant, flow_connect: AsyncMock
+) -> None:
+    """A link-local address of an unconfigured interface is never used."""
+    from ipaddress import ip_address
+
+    from homeassistant.config_entries import SOURCE_ZEROCONF
+
+    info = _zeroconf("169.254.10.20")
+    info.ip_addresses = [ip_address("169.254.10.20"), ip_address("192.168.1.77")]
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_ZEROCONF}, data=info
+    )
+    assert result["description_placeholders"]["host"] == "192.168.1.77"
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_ZEROCONF},
+        data=_zeroconf("169.254.10.21", "87654321"),
+    )
+    assert result["reason"] == "not_wattpilot"
