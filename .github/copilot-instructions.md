@@ -258,6 +258,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
 **Testing**
 
 - Test fixtures in `tests/conftest.py` provide mocked Home Assistant and charger instances
-- Use `pytest-homeassistant-custom-component` for HA test utilities
+- Use `pytest-homeassistant` for HA test utilities
 - Tests are in `tests/` and mirror the structure of `custom_components/wattpilot/`
 - Async tests use `@pytest.mark.asyncio` decorator on test methods in classes

@@ -9,7 +9,7 @@ import pytest
 from homeassistant.config_entries import SOURCE_USER
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import device_registry as dr
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 from wattpilot_api import AuthenticationError, WattpilotError
 
 from custom_components.wattpilot.const import CONF_CONNECTION, CONF_LOCAL, DOMAIN
@@ -61,6 +61,7 @@ async def _start(hass: HomeAssistant, step: str) -> dict[str, Any]:
         DOMAIN, context={"source": SOURCE_USER}
     )
     assert result["type"] is FlowResultType.MENU
+    assert result["step_id"] == "user"
     assert result["menu_options"] == ["local", "cloud"]
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"next_step_id": step}
@@ -121,6 +122,7 @@ async def test_local_flow_errors_then_recovers(
         result["flow_id"], LOCAL_INPUT
     )
     assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "local"
     assert result["errors"] == expected
 
     flow_connect.side_effect = None
@@ -128,6 +130,21 @@ async def test_local_flow_errors_then_recovers(
         result["flow_id"], LOCAL_INPUT
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
+
+
+async def test_cloud_flow_redisplays_cloud_step(
+    hass: HomeAssistant, flow_connect: AsyncMock
+) -> None:
+    """A failed connection redisplays the cloud form."""
+    result = await _start(hass, "cloud")
+    flow_connect.side_effect = AuthenticationError("bad")
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], CLOUD_INPUT
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "cloud"
+    assert result["errors"] == {"base": "invalid_auth"}
 
 
 async def test_local_flow_invalid_ip(
@@ -213,11 +230,13 @@ async def test_reconfigure_shows_errors(
     flow_connect.side_effect = OSError("refused")
     config_entry.add_to_hass(hass)
     result = await config_entry.start_reconfigure_flow(hass)
+    assert result["step_id"] == "reconfigure"
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], LOCAL_INPUT
     )
 
     assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reconfigure"
     assert result["errors"] == {"base": "cannot_connect"}
 
 
@@ -233,6 +252,8 @@ async def test_reauth_updates_password(
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"password": "wrong"}
     )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reauth_confirm"
     assert result["errors"] == {"base": "invalid_auth"}
 
     flow_connect.side_effect = None
@@ -358,6 +379,8 @@ async def test_zeroconf_discovery_creates_entry(
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"friendly_name": "Garage", "password": "wrong"}
     )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "zeroconf_confirm"
     assert result["errors"] == {"base": "invalid_auth"}
 
     flow_connect.side_effect = None

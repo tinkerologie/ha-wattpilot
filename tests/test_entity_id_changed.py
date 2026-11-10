@@ -40,7 +40,10 @@ def _integration_entity_classes() -> list[type[Entity]]:
             if subclass not in found:
                 found.add(subclass)
                 pending.append(subclass)
-    return [cls for cls in found if cls.__module__.startswith(integration.__name__)]
+    return sorted(
+        (cls for cls in found if cls.__module__.startswith(integration.__name__)),
+        key=lambda cls: (cls.__module__, cls.__qualname__),
+    )
 
 
 def _requires_readd(entity_class: type[Entity]) -> bool:
@@ -87,7 +90,9 @@ def test_delegate_skips_a_parent_without_the_hook() -> None:
     async_delegate_entity_id_changed(object(), "sensor.old")
 
 
-@pytest.mark.parametrize("entity_class", OPTED_IN, ids=lambda cls: cls.__name__)
+@pytest.mark.parametrize(
+    "entity_class", _integration_entity_classes(), ids=lambda cls: cls.__name__
+)
 def test_hook_reaches_home_assistant_through_the_mro(
     entity_class: type[Any], monkeypatch: pytest.MonkeyPatch
 ) -> None:

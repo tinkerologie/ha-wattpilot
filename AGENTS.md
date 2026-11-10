@@ -189,7 +189,7 @@ unsub = charger.on_property_change(async_callback)  # Subscribe to updates
 **Testing**
 
 - Test fixtures in `tests/conftest.py` provide mocked Home Assistant and charger instances
-- Use `pytest-homeassistant-custom-component` for Home Assistant test utilities
+- Use `pytest-homeassistant` for Home Assistant test utilities
 - Tests are in `tests/` and mirror the structure of `custom_components/wattpilot/`
 - Async tests use `pytest-asyncio` with `asyncio_mode = "auto"`
 - Deprecations attributed to the integration fail tests (`filterwarnings` and the autouse `fail_on_ha_deprecation_reports` fixture); see the deprecations section of `CONTRIBUTING.md`

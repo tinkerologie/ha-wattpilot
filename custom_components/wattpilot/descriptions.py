@@ -7,11 +7,11 @@ from typing import Any
 
 # The device classes moved to each component's const module after 2026.9; import
 # them from the package, which re-exports them on every supported release.
-from homeassistant.components.binary_sensor import (  # type: ignore[attr-defined]
+from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntityDescription,
 )
-from homeassistant.components.button import (  # type: ignore[attr-defined]
+from homeassistant.components.button import (
     ButtonDeviceClass,
     ButtonEntityDescription,
 )
