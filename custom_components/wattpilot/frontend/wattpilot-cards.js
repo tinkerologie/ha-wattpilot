@@ -878,4 +878,4 @@ var e=globalThis,t=e.ShadowRoot&&(e.ShadyCSS===void 0||e.ShadyCSS.nativeShadow)&
         ?disabled=${!R(e)}
         @change=${t=>this.hass&&Le(this.hass,e.entity_id,t.target.checked)}
       />
-    </label>`}},`card.next_trip.name`,`card.next_trip.description`),console.info(`%c WATTPILOT-CARDS %c 2026.10.3 `,`font-weight:bold`,``);
+    </label>`}},`card.next_trip.name`,`card.next_trip.description`),console.info(`%c WATTPILOT-CARDS %c 2026.11.0 `,`font-weight:bold`,``);

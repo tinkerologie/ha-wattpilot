@@ -7,7 +7,7 @@ packages = ["custom_components/wattpilot"]
 
 [project]
 name = "ha-wattpilot"
-version = "2026.10.2"
+version = "2026.11.0"
 description = "Home Assistant integration for Fronius Wattpilot EV chargers"
 readme = "README.md"
 license = "Apache-2.0"
