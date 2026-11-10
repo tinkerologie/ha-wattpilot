@@ -10,7 +10,7 @@ import pytest
 from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import device_registry as dr
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 from wattpilot_api import AuthenticationError, WattpilotError
 
 from custom_components.wattpilot.const import DOMAIN

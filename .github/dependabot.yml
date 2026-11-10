@@ -37,19 +37,21 @@ updates:
     commit-message:
       prefix: chore(deps)
     groups:
+      homeassistant-test-harness:
+        patterns:
+          - homeassistant
+          - pytest-homeassistant
       uv-minor-patch:
         patterns:
           - '*'
         update-types:
           - minor
           - patch
-    # Packages pytest-homeassistant-custom-component pins exactly (==). Bumping one on
-    # its own makes the lock unsatisfiable and fails the whole update run, so they
-    # move only when pytest-homeassistant-custom-component does (STANDARDS.md §6).
+    # pytest-homeassistant pins these test runners exactly. Let its updates
+    # move the runner pins together with the matching Home Assistant release.
     ignore:
       - dependency-name: pytest
       - dependency-name: pytest-asyncio
-      - dependency-name: pytest-cov
     allow:
       - dependency-type: all
   - package-ecosystem: github-actions

@@ -9,8 +9,8 @@ import pytest
 
 # The parent conftest aliases `hass` to a MagicMock for the unit tests; re-export
 # the plugin's real fixture so tests in this package get a running instance.
-from pytest_homeassistant_custom_component.common import MockConfigEntry
-from pytest_homeassistant_custom_component.plugins import hass  # noqa: F401
+from pytest_homeassistant.common import MockConfigEntry
+from pytest_homeassistant.plugins import hass  # noqa: F401
 
 from custom_components.wattpilot.const import (
     CONF_CONNECTION,
@@ -29,12 +29,6 @@ ENTRY_DATA: dict[str, Any] = {
     "timeout": 15,
     CONF_CONNECTION: CONF_LOCAL,
 }
-
-
-@pytest.fixture(autouse=True)
-def auto_enable_custom_integrations(enable_custom_integrations: None) -> None:
-    """Load the integration from custom_components."""
-    return
 
 
 @pytest.fixture

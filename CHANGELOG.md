@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2026.11.0] - 2026-11-10
+
+### Changed
+
+- Development and CI now use Home Assistant's official `pytest-homeassistant` plugin. HA Next uses a matching harness on each channel and reports when only the import and Hassfest checks ran ([#200](https://github.com/tinkerologie/ha-wattpilot/issues/200)).
+- Verify Wattpilot's device info on Home Assistant 2026.11 without relying on legacy dictionary access ([#198](https://github.com/tinkerologie/ha-wattpilot/issues/198)).
+
 ## [2026.10.3] - 2026-10-30
 
 ### Added

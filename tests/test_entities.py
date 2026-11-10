@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 
 from custom_components.wattpilot.const import CONF_CONNECTION, CONF_LOCAL, DOMAIN
 from custom_components.wattpilot.descriptions import (
@@ -837,10 +838,14 @@ class TestChargerPlatformEntity:
 
         entity = ChargerPlatformEntity(mock_hass, mock_config_entry, desc, mock_charger)
 
-        device_info = entity.device_info
-        assert device_info["identifiers"] == {(DOMAIN, "12345678")}
-        assert device_info["manufacturer"] == "Fronius"
-        assert device_info["name"] == "Test Wattpilot"
+        assert entity.device_info == DeviceInfo(
+            identifiers={(DOMAIN, "12345678")},
+            manufacturer="Fronius",
+            model="Wattpilot",
+            name="Test Wattpilot",
+            sw_version="40.7",
+            hw_version="11 KW",
+        )
 
     @pytest.mark.asyncio
     async def test_entity_async_update_poll(
