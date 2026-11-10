@@ -301,3 +301,19 @@ These rules apply to every contributor, including AI coding agents. The full org
    days later unless there is new activity. These labels are exempt:
    - Issues: `pinned`, `security`, `confirmed`, `work-in-progress`, `priority: critical`, `priority: high`.
    - Pull requests: `pinned`, `security`, `work-in-progress`.
+
+## Agent skills
+
+### Issue tracker
+
+Read `docs/agents/issue-tracker.md` when fetching or publishing GitHub issues,
+specs, or tickets.
+
+### Triage labels
+
+Read `docs/agents/triage-labels.md` when querying or changing triage states.
+
+### Domain docs
+
+Read `docs/agents/domain.md` before exploring the domain. This repository uses
+a single-context layout.
