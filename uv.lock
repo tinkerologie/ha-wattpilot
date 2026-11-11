@@ -3014,7 +3014,7 @@ wheels = [
 
 [[package]]
 name = "winrt-windows-devices-bluetooth"
-version = "4!10.0.28000.2705"
+version = "4!10.0.28000.2957"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "winrt-runtime" },
@@ -3022,9 +3022,9 @@ dependencies = [
     { name = "winrt-windows-foundation-collections" },
     { name = "winrt-windows-storage-streams" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/13/a2/02c95c1766180032917f8fd3becf26557f79cc6a526fe45cd2ead1955ced/winrt_windows_devices_bluetooth-4!10.0.28000.2705.tar.gz", hash = "sha256:998449c3c2058cf7a721200de260013df1dc8367d08fed123b8e608bc353f5b2", size = 21158, upload-time = "2026-10-24T01:45:25.696Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/65/d5/53e1692a439ad8a15e72ca2e5982517df79f44d2a82669ec4ac6d6e3f884/winrt_windows_devices_bluetooth-4!10.0.28000.2957.tar.gz", hash = "sha256:50fda25dcca0c4bada5acdf39e24f8da8a2ed85c5b98b3aba301815ca5181315", size = 21303, upload-time = "2026-10-31T23:43:52.304Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c9/0c/6ac0f96761a9a0a3d247e59b9e133819c095aea588cd0858f7d4bdaff715/winrt_windows_devices_bluetooth-4!10.0.28000.2705-py3-none-any.whl", hash = "sha256:c68bdb970459eab888cf03764d50ee156eedd10fd02aceefb161babad0ba3dc7", size = 25007, upload-time = "2026-10-24T01:30:00.033Z" },
+    { url = "https://files.pythonhosted.org/packages/02/39/e7b417102abaff5d5509b43e3b5fd515d9dac8392f54ec2d973522b47116/winrt_windows_devices_bluetooth-4!10.0.28000.2957-py3-none-any.whl", hash = "sha256:e39bcddf747396e2da78cb8c3d00c3e51214e5f1a9dc213fc009434c5264bbea", size = 25179, upload-time = "2026-10-31T23:38:50.19Z" },
 ]
 
 [[package]]
