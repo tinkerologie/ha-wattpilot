@@ -19,6 +19,7 @@ concurrency:
 
 jobs:
   validate-version:
+    timeout-minutes: 30
     name: Version
     runs-on: ubuntu-latest
     steps:
@@ -63,6 +64,7 @@ jobs:
           echo "✅ CHANGELOG.md contains entry for version $VERSION"
 
   hacs-validate:
+    timeout-minutes: 30
     name: HACS
     runs-on: ubuntu-latest
     steps:
@@ -77,6 +79,7 @@ jobs:
           category: integration
 
   release-zip:
+    timeout-minutes: 30
     name: Release zip
     runs-on: ubuntu-latest
     steps:
@@ -100,6 +103,7 @@ jobs:
           (cd dist/b && sha256sum -c SHA256SUMS)
 
   quality-scale:
+    timeout-minutes: 30
     name: Quality Scale
     runs-on: ubuntu-latest
     steps:

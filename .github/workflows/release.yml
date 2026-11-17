@@ -18,6 +18,7 @@ concurrency:
 
 jobs:
   check-version:
+    timeout-minutes: 60
     name: Check Version
     runs-on: ubuntu-latest
     permissions:
@@ -54,6 +55,7 @@ jobs:
           fi
 
   build:
+    timeout-minutes: 60
     name: Build and attest
     needs: check-version
     if: needs.check-version.outputs.version_changed == 'true'
@@ -127,6 +129,7 @@ jobs:
           retention-days: 7
 
   publish:
+    timeout-minutes: 60
     name: Publish
     needs: [check-version, build]
     if: needs.check-version.outputs.version_changed == 'true'

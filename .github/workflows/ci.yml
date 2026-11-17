@@ -16,6 +16,7 @@ concurrency:
 
 jobs:
   lint:
+    timeout-minutes: 30
     name: Lint
     runs-on: ubuntu-latest
     steps:
@@ -43,6 +44,7 @@ jobs:
         run: uvx mypy --python-executable .venv/bin/python  # strict, configured in pyproject.toml
 
   test:
+    timeout-minutes: 30
     name: Test
     runs-on: ubuntu-latest
     steps:
@@ -66,11 +68,13 @@ jobs:
       - name: Upload coverage artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
+          retention-days: 7
           name: coverage-python
           path: coverage.xml
           if-no-files-found: error
 
   frontend:
+    timeout-minutes: 30
     name: Frontend
     runs-on: ubuntu-latest
     defaults:
@@ -101,6 +105,7 @@ jobs:
       - name: Upload coverage artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
+          retention-days: 7
           name: coverage-frontend
           path: frontend/coverage/lcov.info
           if-no-files-found: error
@@ -119,6 +124,7 @@ jobs:
           fi
 
   codecov:
+    timeout-minutes: 30
     name: Coverage
     needs: [test, frontend]
     runs-on: ubuntu-latest
@@ -147,8 +153,8 @@ jobs:
           slug: ${{ github.repository }}
           files: ./coverage-python/coverage.xml
           flags: python
-          use_oidc: ${{ env.CODECOV_OIDC == 'true' }}
-          fail_ci_if_error: ${{ env.CODECOV_OIDC == 'true' }}
+          use_oidc: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+          fail_ci_if_error: false
 
       - name: Upload frontend coverage to Codecov
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
@@ -157,8 +163,8 @@ jobs:
           slug: ${{ github.repository }}
           files: ./coverage-frontend/lcov.info
           flags: frontend
-          use_oidc: ${{ env.CODECOV_OIDC == 'true' }}
-          fail_ci_if_error: ${{ env.CODECOV_OIDC == 'true' }}
+          use_oidc: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+          fail_ci_if_error: false
 
   ci-gate:
     name: CI Gate
