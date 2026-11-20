@@ -184,7 +184,8 @@ def extract_schedule_range_time(
     ranges = schedule["ranges"]
     if not (0 <= range_index < len(ranges)):
         return None
-    return ranges[range_index].get(range_edge)
+    val = ranges[range_index].get(range_edge)
+    return val if isinstance(val, dt.time) else None
 
 
 def format_schedule_attributes(raw: Any) -> dict[str, Any]:
