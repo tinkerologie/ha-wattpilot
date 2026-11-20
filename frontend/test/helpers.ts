@@ -56,6 +56,63 @@ export function defaultStates(): Partial<Record<Role, HassEntity>> {
       max: 999999,
     }),
     remain_in_eco_mode: entity("switch.wp_fre", "on"),
+    schedule_weekday_control: entity(
+      "select.wp_sch_week_control",
+      "Allow Charging + PV Surplus",
+      {
+        options: [
+          "Disabled",
+          "Allow Charging",
+          "Block Charging",
+          "Allow Charging + PV Surplus",
+          "Block Charging + PV Surplus",
+        ],
+        range_1_start: "23:00",
+        range_1_end: "15:00",
+        range_2_start: "00:00",
+        range_2_end: "00:00",
+      }
+    ),
+    schedule_saturday_control: entity(
+      "select.wp_sch_satur_control",
+      "Allow Charging + PV Surplus",
+      {
+        options: [
+          "Disabled",
+          "Allow Charging",
+          "Block Charging",
+          "Allow Charging + PV Surplus",
+          "Block Charging + PV Surplus",
+        ],
+        range_1_start: "23:00",
+        range_1_end: "15:00",
+        range_2_start: "00:00",
+        range_2_end: "00:00",
+      }
+    ),
+    schedule_sunday_control: entity(
+      "select.wp_sch_sund_control",
+      "Allow Charging + PV Surplus",
+      {
+        options: [
+          "Disabled",
+          "Allow Charging",
+          "Block Charging",
+          "Allow Charging + PV Surplus",
+          "Block Charging + PV Surplus",
+        ],
+        range_1_start: "23:00",
+        range_1_end: "15:00",
+        range_2_start: "00:00",
+        range_2_end: "00:00",
+      }
+    ),
+    schedule_weekday_start_1: entity("time.wp_sch_week_start_1", "23:00:00"),
+    schedule_weekday_end_1: entity("time.wp_sch_week_end_1", "15:00:00"),
+    schedule_saturday_start_1: entity("time.wp_sch_satur_start_1", "23:00:00"),
+    schedule_saturday_end_1: entity("time.wp_sch_satur_end_1", "15:00:00"),
+    schedule_sunday_start_1: entity("time.wp_sch_sund_start_1", "23:00:00"),
+    schedule_sunday_end_1: entity("time.wp_sch_sund_end_1", "15:00:00"),
   };
 }
 

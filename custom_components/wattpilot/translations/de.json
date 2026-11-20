@@ -379,13 +379,13 @@
         "name": "Kabelverriegelung"
       },
       "schedule_weekday_control": {
-        "name": "Zeitplan Wochentag Modus"
+        "name": "Zeitplan 1 Mo–Fr Modus"
       },
       "schedule_saturday_control": {
-        "name": "Zeitplan Samstag Modus"
+        "name": "Zeitplan 2 Samstag Modus"
       },
       "schedule_sunday_control": {
-        "name": "Zeitplan Sonntag Modus"
+        "name": "Zeitplan 3 Sonntag Modus"
       }
     },
     "button": {
@@ -415,40 +415,40 @@
         "name": "Nächste Abfahrtszeit"
       },
       "schedule_weekday_start_1": {
-        "name": "Zeitplan Wochentag Start 1"
+        "name": "Zeitplan 1 Mo–Fr Fenster 1A Start"
       },
       "schedule_weekday_end_1": {
-        "name": "Zeitplan Wochentag Ende 1"
+        "name": "Zeitplan 1 Mo–Fr Fenster 1B Ende"
       },
       "schedule_weekday_start_2": {
-        "name": "Zeitplan Wochentag Start 2"
+        "name": "Zeitplan 1 Mo–Fr Fenster 2A Start"
       },
       "schedule_weekday_end_2": {
-        "name": "Zeitplan Wochentag Ende 2"
+        "name": "Zeitplan 1 Mo–Fr Fenster 2B Ende"
       },
       "schedule_saturday_start_1": {
-        "name": "Zeitplan Samstag Start 1"
+        "name": "Zeitplan 2 Samstag Fenster 1A Start"
       },
       "schedule_saturday_end_1": {
-        "name": "Zeitplan Samstag Ende 1"
+        "name": "Zeitplan 2 Samstag Fenster 1B Ende"
       },
       "schedule_saturday_start_2": {
-        "name": "Zeitplan Samstag Start 2"
+        "name": "Zeitplan 2 Samstag Fenster 2A Start"
       },
       "schedule_saturday_end_2": {
-        "name": "Zeitplan Samstag Ende 2"
+        "name": "Zeitplan 2 Samstag Fenster 2B Ende"
       },
       "schedule_sunday_start_1": {
-        "name": "Zeitplan Sonntag Start 1"
+        "name": "Zeitplan 3 Sonntag Fenster 1A Start"
       },
       "schedule_sunday_end_1": {
-        "name": "Zeitplan Sonntag Ende 1"
+        "name": "Zeitplan 3 Sonntag Fenster 1B Ende"
       },
       "schedule_sunday_start_2": {
-        "name": "Zeitplan Sonntag Start 2"
+        "name": "Zeitplan 3 Sonntag Fenster 2A Start"
       },
       "schedule_sunday_end_2": {
-        "name": "Zeitplan Sonntag Ende 2"
+        "name": "Zeitplan 3 Sonntag Fenster 2B Ende"
       }
     }
   },

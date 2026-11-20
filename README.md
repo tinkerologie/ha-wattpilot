@@ -92,6 +92,7 @@ The integration registers its cards automatically. In a dashboard, choose **Add 
 | `custom:wattpilot-charger-card`   | Charging status, a live power ring with the km/h being added, session distance and energy, Start/Stop, solar/battery/grid power and a second page with the PV quick settings (PV surplus and battery thresholds). The ⓘ button shows current, voltage and power factor per phase and the cable limit. |
 | `custom:wattpilot-mode-card`      | Standard, Eco and Next trip as large buttons, charging from the PV battery, the charging current and (optionally) the phase mode.                                                                                                                                                                     |
 | `custom:wattpilot-next-trip-card` | Departure time, the energy needed for the trip and the _stay in Eco_ switch, with a one-tap way to switch to Next trip mode.                                                                                                                                                                          |
+| `custom:wattpilot-schedule-card`  | Built-in charging timer schedules for weekdays (Mon–Fri), Saturday and Sunday, with inline mode selectors, time window pickers (Slot 1 and optional Slot 2) and a one-tap button to copy weekday settings to the weekend.                                                                             |
 
 ![Wattpilot dashboard cards](doc/dashboard_cards.png)
 

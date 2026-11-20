@@ -11,8 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Built-in Charging Timer Schedules (`sch_week`, `sch_satur`, `sch_sund`)**:
   - Added 3 `select` entities (`schedule_weekday_control`, `schedule_saturday_control`, `schedule_sunday_control`) to view and modify the Wattpilot Charging Timer control mode (`Disabled`, `Allow Charging`, `Block Charging`, `Allow Charging + PV Surplus`, `Block Charging + PV Surplus`) with formatted `range_1` and `range_2` state attributes.
-  - Added 12 `time` entities (`schedule_weekday_start_1`, `schedule_weekday_end_1`, `schedule_weekday_start_2`, `schedule_weekday_end_2`, `schedule_saturday_start_1`, `schedule_saturday_end_1`, `schedule_saturday_start_2`, `schedule_saturday_end_2`, `schedule_sunday_start_1`, `schedule_sunday_end_1`, `schedule_sunday_start_2`, `schedule_sunday_end_2`) to view and modify both time windows for weekdays, Saturday, and Sunday directly from Home Assistant.
+  - Added 12 `time` entities (`schedule_weekday_start_1`, `schedule_weekday_end_1`, `schedule_weekday_start_2`, `schedule_weekday_end_2`, `schedule_saturday_start_1`, `schedule_saturday_end_1`, `schedule_saturday_start_2`, `schedule_saturday_end_2`, `schedule_sunday_start_1`, `schedule_sunday_end_1`, `schedule_sunday_start_2`, `schedule_sunday_end_2`) to view and modify both time windows for weekdays, Saturday, and Sunday directly from Home Assistant (Slot 2 entities are disabled by default to keep the Device page uncluttered).
   - Added `wattpilot.set_charging_schedule` service to update control mode and/or time windows for `weekday`, `saturday`, `sunday`, `weekend`, or `all` in a single service call.
+  - Added `custom:wattpilot-schedule-card` dashboard card to view and edit weekday, Saturday, and Sunday charging schedules and copy weekday settings to the weekend.
+
+### Changed
+
+- Explicit `NumberMode.BOX` and `NumberMode.SLIDER` input modes on `number` entities so wide-range values (`start_charging_at`, `next_trip_charging`, `max_price`, `three_phase_power_level`, `phase_switch_delay`, `phase_switch_interval`) render as clean numeric boxes on the Device page instead of 0–999999 sliders, while percentage/minute thresholds (`pv_battery_threshold`, `boost_discharges_until`, `pv_battery_discharges_until`, `ohmpilot_threshold`, `min_charging_time`) render as sliders.
 
 ## [2026.11.0] - 2026-11-10
 

@@ -390,13 +390,13 @@
         "name": "Cable Unlock"
       },
       "schedule_weekday_control": {
-        "name": "Schedule Weekday Control"
+        "name": "Schedule 1 Mon–Fri Mode"
       },
       "schedule_saturday_control": {
-        "name": "Schedule Saturday Control"
+        "name": "Schedule 2 Saturday Mode"
       },
       "schedule_sunday_control": {
-        "name": "Schedule Sunday Control"
+        "name": "Schedule 3 Sunday Mode"
       }
     },
     "button": {
@@ -426,40 +426,40 @@
         "name": "Next Trip Time"
       },
       "schedule_weekday_start_1": {
-        "name": "Schedule Weekday Start 1"
+        "name": "Schedule 1 Mon–Fri Slot 1A Start"
       },
       "schedule_weekday_end_1": {
-        "name": "Schedule Weekday End 1"
+        "name": "Schedule 1 Mon–Fri Slot 1B End"
       },
       "schedule_weekday_start_2": {
-        "name": "Schedule Weekday Start 2"
+        "name": "Schedule 1 Mon–Fri Slot 2A Start"
       },
       "schedule_weekday_end_2": {
-        "name": "Schedule Weekday End 2"
+        "name": "Schedule 1 Mon–Fri Slot 2B End"
       },
       "schedule_saturday_start_1": {
-        "name": "Schedule Saturday Start 1"
+        "name": "Schedule 2 Saturday Slot 1A Start"
       },
       "schedule_saturday_end_1": {
-        "name": "Schedule Saturday End 1"
+        "name": "Schedule 2 Saturday Slot 1B End"
       },
       "schedule_saturday_start_2": {
-        "name": "Schedule Saturday Start 2"
+        "name": "Schedule 2 Saturday Slot 2A Start"
       },
       "schedule_saturday_end_2": {
-        "name": "Schedule Saturday End 2"
+        "name": "Schedule 2 Saturday Slot 2B End"
       },
       "schedule_sunday_start_1": {
-        "name": "Schedule Sunday Start 1"
+        "name": "Schedule 3 Sunday Slot 1A Start"
       },
       "schedule_sunday_end_1": {
-        "name": "Schedule Sunday End 1"
+        "name": "Schedule 3 Sunday Slot 1B End"
       },
       "schedule_sunday_start_2": {
-        "name": "Schedule Sunday Start 2"
+        "name": "Schedule 3 Sunday Slot 2A Start"
       },
       "schedule_sunday_end_2": {
-        "name": "Schedule Sunday End 2"
+        "name": "Schedule 3 Sunday Slot 2B End"
       }
     }
   },
