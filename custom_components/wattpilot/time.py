@@ -20,7 +20,11 @@ from .descriptions import (
     WattpilotTimeEntityDescription,
 )
 from .entities import ChargerPlatformEntity, filter_descriptions
-from .utils import register_push_entity
+from .utils import (
+    async_write_schedule_property,
+    extract_schedule_range_time,
+    register_push_entity,
+)
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -87,10 +91,15 @@ class ChargerTime(ChargerPlatformEntity, TimeEntity):
     async def _async_update_validate_platform_state(
         self, state: Any = None
     ) -> dt.time | None:
-        """Async: Validate and convert seconds-since-midnight to datetime.time."""
+        """Async: Validate and convert charger state to datetime.time."""
         try:
             if state is None:
                 return None
+            desc = self.entity_description
+            if desc.range_index is not None and desc.range_edge is not None:
+                return extract_schedule_range_time(
+                    state, desc.range_index, desc.range_edge
+                )
             seconds = int(state) % _SECONDS_PER_DAY
             hour = seconds // _SECONDS_PER_HOUR
             remaining = seconds % _SECONDS_PER_HOUR
@@ -108,5 +117,16 @@ class ChargerTime(ChargerPlatformEntity, TimeEntity):
             return None
 
     async def async_set_value(self, value: dt.time) -> None:
-        """Async: Set the departure time for the next trip."""
+        """Async: Set the time value on the charger."""
+        desc = self.entity_description
+        if desc.range_index is not None and desc.range_edge is not None:
+            await self._async_write(
+                async_write_schedule_property(
+                    self._entry,
+                    self._charger,
+                    self._identifier,
+                    range_updates={desc.range_index: {desc.range_edge: value}},
+                )
+            )
+            return
         await self._async_write(self._charger.set_next_trip(value))

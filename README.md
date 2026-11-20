@@ -92,6 +92,7 @@ The integration registers its cards automatically. In a dashboard, choose **Add 
 | `custom:wattpilot-charger-card`   | Charging status, a live power ring with the km/h being added, session distance and energy, Start/Stop, solar/battery/grid power and a second page with the PV quick settings (PV surplus and battery thresholds). The ⓘ button shows current, voltage and power factor per phase and the cable limit. |
 | `custom:wattpilot-mode-card`      | Standard, Eco and Next trip as large buttons, charging from the PV battery, the charging current and (optionally) the phase mode.                                                                                                                                                                     |
 | `custom:wattpilot-next-trip-card` | Departure time, the energy needed for the trip and the _stay in Eco_ switch, with a one-tap way to switch to Next trip mode.                                                                                                                                                                          |
+| `custom:wattpilot-schedule-card`  | Built-in charging timer schedules for weekdays (Mon–Fri), Saturday and Sunday, with inline mode selectors, time window pickers (Slot 1 and optional Slot 2) and a one-tap button to copy weekday settings to the weekend.                                                                             |
 
 ![Wattpilot dashboard cards](doc/dashboard_cards.png)
 
@@ -119,9 +120,9 @@ Sections that depend on optional entities hide themselves. For example, _Chargin
 | Binary sensor | Plug connected, charging                                                                                                                                                                                            |
 | Button        | Start charging, stop charging, force start, restart                                                                                                                                                                 |
 | Number        | Max charging current, start charging at (PV surplus), PV battery threshold, next trip energy, phase switch timing                                                                                                   |
-| Select        | Charging mode, phase switch mode, cable unlock, access control                                                                                                                                                      |
+| Select        | Charging mode, phase switch mode, cable unlock, access control, charging schedule control modes (weekday, Saturday, Sunday)                                                                                          |
 | Switch        | PV surplus charging, remain in Eco, discharge PV battery, boost and more                                                                                                                                            |
-| Time          | Next trip departure time                                                                                                                                                                                            |
+| Time          | Next trip departure time, charging schedule time windows (weekday, Saturday, Sunday)                                                                                                                                |
 | Update        | Charger firmware                                                                                                                                                                                                    |
 
 PV, grid and battery sensors only appear when the charger is linked to a Fronius inverter.
@@ -134,10 +135,11 @@ The charger keeps a websocket open to Home Assistant and pushes every property c
 
 | Action                         | Fields                      | What it does                                                                                   |
 | ------------------------------ | --------------------------- | ---------------------------------------------------------------------------------------------- |
-| `wattpilot.set_next_trip`      | `device_id`, `trigger_time` | Sets the next trip departure time.                                                             |
-| `wattpilot.set_goe_cloud`      | `device_id`, `cloud_api`    | Turns the go-e cloud API on or off. When turned on, the response contains the API key and URL. |
-| `wattpilot.disconnect_charger` | `device_id`                 | Closes the connection (entities become unavailable).                                           |
-| `wattpilot.reconnect_charger`  | `device_id`                 | Reconnects a disconnected charger.                                                             |
+| `wattpilot.set_next_trip`         | `device_id`, `trigger_time`                                                                  | Sets the next trip departure time.                                                             |
+| `wattpilot.set_charging_schedule` | `device_id`, `schedule`, `control`, `start_time_1`, `end_time_1`, `start_time_2`, `end_time_2` | Sets a built-in charging timer schedule (`weekday`, `saturday`, `sunday`, `weekend`, or `all`) and its two time slots. |
+| `wattpilot.set_goe_cloud`         | `device_id`, `cloud_api`                                                                     | Turns the go-e cloud API on or off. When turned on, the response contains the API key and URL. |
+| `wattpilot.disconnect_charger`    | `device_id`                                                                                  | Closes the connection (entities become unavailable).                                           |
+| `wattpilot.reconnect_charger`     | `device_id`                                                                                  | Reconnects a disconnected charger.                                                             |
 
 Invalid input (for example an unknown device) raises a validation error in the UI, and errors from the charger connection raise an error with their message. The same applies to entities: if the charger refuses a switch, number, select, button or time change, does not acknowledge it in time, or the connection drops, Home Assistant shows an error with the charger's message instead of silently keeping the old value.
 

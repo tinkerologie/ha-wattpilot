@@ -382,3 +382,56 @@ class TestChargerTime:
             new_time = dt.time(8, 30, 0)
             await time_entity.async_set_value(new_time)
             mock_charger.set_next_trip.assert_called_once_with(new_time)
+
+    @pytest.mark.asyncio
+    async def test_schedule_range_time_read_and_write(
+        self,
+        hass: HomeAssistant,
+        mock_charger: MagicMock,
+        mock_coordinator: MagicMock,
+        mock_config_entry_data: dict,
+    ) -> None:
+        """Test schedule range time entity reads and updates schedule range time."""
+        from custom_components.wattpilot.descriptions import TIME_DESCRIPTIONS
+        from custom_components.wattpilot.time import ChargerTime
+
+        desc = next(d for d in TIME_DESCRIPTIONS if d.key == "schedule_weekday_start_1")
+        entry = self._make_entry(
+            hass, mock_charger, mock_coordinator, mock_config_entry_data
+        )
+        raw_sched = {
+            "control": 3,
+            "ranges": [
+                {
+                    "begin": {"hour": 23, "minute": 0, "second": 0},
+                    "end": {"hour": 15, "minute": 0, "second": 0},
+                },
+                {
+                    "begin": {"hour": 0, "minute": 0, "second": 0},
+                    "end": {"hour": 0, "minute": 0, "second": 0},
+                },
+            ],
+        }
+        mock_charger.all_properties["sch_week"] = raw_sched
+        mock_charger.set_property = AsyncMock()
+
+        time_entity = ChargerTime(hass, entry, desc, mock_charger)
+        time_entity.async_write_ha_state = MagicMock()
+        await time_entity.async_local_push(raw_sched)
+        assert time_entity.native_value == dt.time(23, 0, 0)
+
+        await time_entity.async_set_value(dt.time(22, 30, 0))
+        mock_charger.set_property.assert_awaited_once()
+        called_key, called_payload = mock_charger.set_property.call_args.args
+        assert called_key == "sch_week"
+        assert called_payload["control"] == 3
+        assert called_payload["ranges"][0]["begin"] == {
+            "hour": 22,
+            "minute": 30,
+            "second": 0,
+        }
+        assert called_payload["ranges"][0]["end"] == {
+            "hour": 15,
+            "minute": 0,
+            "second": 0,
+        }

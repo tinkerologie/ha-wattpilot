@@ -145,6 +145,40 @@
           "description": "The charger device to reconnect."
         }
       }
+    },
+    "set_charging_schedule": {
+      "name": "Set charging schedule",
+      "description": "Update the built-in Wattpilot charging timer schedule for weekdays, Saturday, Sunday, or all days.",
+      "fields": {
+        "device_id": {
+          "name": "Charger",
+          "description": "The charger device to configure."
+        },
+        "schedule": {
+          "name": "Schedule day group",
+          "description": "Which schedule day group to update (weekday, saturday, sunday, weekend, or all)."
+        },
+        "control": {
+          "name": "Control mode",
+          "description": "Charging timer control mode."
+        },
+        "start_time_1": {
+          "name": "Range 1 start time",
+          "description": "Start time for schedule range 1."
+        },
+        "end_time_1": {
+          "name": "Range 1 end time",
+          "description": "End time for schedule range 1."
+        },
+        "start_time_2": {
+          "name": "Range 2 start time",
+          "description": "Start time for schedule range 2."
+        },
+        "end_time_2": {
+          "name": "Range 2 end time",
+          "description": "End time for schedule range 2."
+        }
+      }
     }
   },
   "entity": {
@@ -354,6 +388,15 @@
       },
       "cable_unlock_select": {
         "name": "Cable Unlock"
+      },
+      "schedule_weekday_control": {
+        "name": "Schedule 1 Mon–Fri Mode"
+      },
+      "schedule_saturday_control": {
+        "name": "Schedule 2 Saturday Mode"
+      },
+      "schedule_sunday_control": {
+        "name": "Schedule 3 Sunday Mode"
       }
     },
     "button": {
@@ -381,6 +424,42 @@
     "time": {
       "next_trip_time": {
         "name": "Next Trip Time"
+      },
+      "schedule_weekday_start_1": {
+        "name": "Schedule 1 Mon–Fri Slot 1A Start"
+      },
+      "schedule_weekday_end_1": {
+        "name": "Schedule 1 Mon–Fri Slot 1B End"
+      },
+      "schedule_weekday_start_2": {
+        "name": "Schedule 1 Mon–Fri Slot 2A Start"
+      },
+      "schedule_weekday_end_2": {
+        "name": "Schedule 1 Mon–Fri Slot 2B End"
+      },
+      "schedule_saturday_start_1": {
+        "name": "Schedule 2 Saturday Slot 1A Start"
+      },
+      "schedule_saturday_end_1": {
+        "name": "Schedule 2 Saturday Slot 1B End"
+      },
+      "schedule_saturday_start_2": {
+        "name": "Schedule 2 Saturday Slot 2A Start"
+      },
+      "schedule_saturday_end_2": {
+        "name": "Schedule 2 Saturday Slot 2B End"
+      },
+      "schedule_sunday_start_1": {
+        "name": "Schedule 3 Sunday Slot 1A Start"
+      },
+      "schedule_sunday_end_1": {
+        "name": "Schedule 3 Sunday Slot 1B End"
+      },
+      "schedule_sunday_start_2": {
+        "name": "Schedule 3 Sunday Slot 2A Start"
+      },
+      "schedule_sunday_end_2": {
+        "name": "Schedule 3 Sunday Slot 2B End"
       }
     }
   },

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
@@ -23,6 +24,7 @@ class WattpilotRuntimeData:
         field(default_factory=dict)
     )
     params: dict[str, Any] = field(default_factory=dict)
+    schedule_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
 
 type WattpilotConfigEntry = ConfigEntry[WattpilotRuntimeData]

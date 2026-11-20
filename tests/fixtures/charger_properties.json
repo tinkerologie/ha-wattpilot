@@ -219,6 +219,54 @@
     "ftt": {
       "value": 25200,
       "description": "Planned departure time for next trip (seconds since midnight)"
+    },
+    "sch_week": {
+      "value": {
+        "control": 3,
+        "ranges": [
+          {
+            "begin": { "hour": 23, "minute": 0, "second": 0 },
+            "end": { "hour": 15, "minute": 0, "second": 0 }
+          },
+          {
+            "begin": { "hour": 0, "minute": 0, "second": 0 },
+            "end": { "hour": 0, "minute": 0, "second": 0 }
+          }
+        ]
+      },
+      "description": "Weekday charging schedule"
+    },
+    "sch_satur": {
+      "value": {
+        "control": 3,
+        "ranges": [
+          {
+            "begin": { "hour": 23, "minute": 0, "second": 0 },
+            "end": { "hour": 15, "minute": 0, "second": 0 }
+          },
+          {
+            "begin": { "hour": 0, "minute": 0, "second": 0 },
+            "end": { "hour": 0, "minute": 0, "second": 0 }
+          }
+        ]
+      },
+      "description": "Saturday charging schedule"
+    },
+    "sch_sund": {
+      "value": {
+        "control": 3,
+        "ranges": [
+          {
+            "begin": { "hour": 23, "minute": 0, "second": 0 },
+            "end": { "hour": 15, "minute": 0, "second": 0 }
+          },
+          {
+            "begin": { "hour": 0, "minute": 0, "second": 0 },
+            "end": { "hour": 0, "minute": 0, "second": 0 }
+          }
+        ]
+      },
+      "description": "Sunday charging schedule"
     }
   },
   "attributes": {

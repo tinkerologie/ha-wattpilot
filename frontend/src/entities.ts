@@ -39,6 +39,21 @@ export const ROLES = {
   remain_in_eco_mode: { domain: "switch", key: "remain_in_eco_mode" },
   pv_surplus: { domain: "switch", key: "pv_surplus" },
   discharge_pv_battery: { domain: "switch", key: "discharge_pv_battery" },
+  schedule_weekday_control: { domain: "select", key: "schedule_weekday_control" },
+  schedule_saturday_control: { domain: "select", key: "schedule_saturday_control" },
+  schedule_sunday_control: { domain: "select", key: "schedule_sunday_control" },
+  schedule_weekday_start_1: { domain: "time", key: "schedule_weekday_start_1" },
+  schedule_weekday_end_1: { domain: "time", key: "schedule_weekday_end_1" },
+  schedule_weekday_start_2: { domain: "time", key: "schedule_weekday_start_2" },
+  schedule_weekday_end_2: { domain: "time", key: "schedule_weekday_end_2" },
+  schedule_saturday_start_1: { domain: "time", key: "schedule_saturday_start_1" },
+  schedule_saturday_end_1: { domain: "time", key: "schedule_saturday_end_1" },
+  schedule_saturday_start_2: { domain: "time", key: "schedule_saturday_start_2" },
+  schedule_saturday_end_2: { domain: "time", key: "schedule_saturday_end_2" },
+  schedule_sunday_start_1: { domain: "time", key: "schedule_sunday_start_1" },
+  schedule_sunday_end_1: { domain: "time", key: "schedule_sunday_end_1" },
+  schedule_sunday_start_2: { domain: "time", key: "schedule_sunday_start_2" },
+  schedule_sunday_end_2: { domain: "time", key: "schedule_sunday_end_2" },
 } as const satisfies Record<string, { domain: string; key: string }>;
 
 export type Role = keyof typeof ROLES;

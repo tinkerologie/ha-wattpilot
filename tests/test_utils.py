@@ -545,3 +545,195 @@ async def test_property_helpers_handle_none_all_properties() -> None:
 
     assert GetChargerProp(charger, "car", 7) == 7
     assert await async_GetChargerProp(charger, "car", 7) == 7
+
+
+def test_schedule_helpers() -> None:
+    """Test schedule parsing, formatting, and payload building helpers."""
+    import datetime as dt
+    from types import SimpleNamespace
+
+    from custom_components.wattpilot.utils import (
+        build_schedule_payload,
+        cache_charger_prop,
+        extract_schedule_data,
+        extract_schedule_range_time,
+        format_schedule_attributes,
+    )
+
+    assert extract_schedule_data(None) is None
+    assert extract_schedule_data(12345) is None
+
+    ns_sched = SimpleNamespace(
+        control=3,
+        ranges=[
+            SimpleNamespace(
+                begin=SimpleNamespace(hour=23, minute=0, second=0),
+                end=SimpleNamespace(hour=15, minute=0, second=0),
+            ),
+            SimpleNamespace(
+                begin=SimpleNamespace(hour=6, minute=30, second=0),
+                end=SimpleNamespace(hour=8, minute=15, second=0),
+            ),
+        ],
+    )
+    extracted = extract_schedule_data(ns_sched)
+    assert extracted is not None
+    assert extracted["control"] == 3
+    assert extracted["has_seconds"] is True
+    assert extracted["ranges"][0]["begin"] == dt.time(23, 0, 0)
+    assert extracted["ranges"][0]["end"] == dt.time(15, 0, 0)
+    assert extracted["ranges"][1]["begin"] == dt.time(6, 30, 0)
+    assert extracted["ranges"][1]["end"] == dt.time(8, 15, 0)
+
+    attrs = format_schedule_attributes(ns_sched)
+    assert attrs == {
+        "range_1": "23:00 - 15:00",
+        "range_2": "06:30 - 08:15",
+        "range_1_start": "23:00:00",
+        "range_1_end": "15:00:00",
+        "range_2_start": "06:30:00",
+        "range_2_end": "08:15:00",
+    }
+    assert format_schedule_attributes(None) == {}
+
+    assert extract_schedule_range_time(ns_sched, 0, "begin") == dt.time(23, 0, 0)
+    assert extract_schedule_range_time(ns_sched.ranges, 1, "end") == dt.time(8, 15, 0)
+    assert extract_schedule_range_time(dt.time(12, 0), 0, "begin") == dt.time(12, 0)
+    assert extract_schedule_range_time(None, 0, "begin") is None
+    assert extract_schedule_range_time(ns_sched, 5, "begin") is None
+    assert extract_schedule_range_time(ns_sched.ranges, 5, "begin") is None
+    assert extract_schedule_range_time("invalid", 0, "begin") is None
+
+    legacy_dict = {
+        "control": "invalid_int",
+        "ranges": [
+            {"begin": {"hour": 22, "minute": 0}, "end": {"hour": 6, "minute": 0}},
+        ],
+    }
+    payload_legacy = build_schedule_payload(
+        legacy_dict,
+        control=1,
+        range_updates={1: {"begin": dt.time(10, 0), "end": dt.time(14, 0)}},
+    )
+    assert payload_legacy == {
+        "control": 1,
+        "ranges": [
+            {"begin": {"hour": 22, "minute": 0}, "end": {"hour": 6, "minute": 0}},
+            {"begin": {"hour": 10, "minute": 0}, "end": {"hour": 14, "minute": 0}},
+        ],
+    }
+
+    payload_default = build_schedule_payload(None, control=2)
+    assert payload_default["control"] == 2
+    assert len(payload_default["ranges"]) == 2
+    assert payload_default["ranges"][0]["begin"] == {
+        "hour": 0,
+        "minute": 0,
+        "second": 0,
+    }
+
+    bad_edge_dict = {
+        "control": 0,
+        "ranges": [{"begin": {"hour": 99, "minute": 0}, "end": "bad"}],
+    }
+    assert extract_schedule_range_time(bad_edge_dict, 0, "begin") == dt.time(0, 0, 0)
+    assert (
+        extract_schedule_range_time([{"begin": {"hour": "x", "minute": 0}}], 0, "begin")
+        is None
+    )
+
+    dummy_charger = SimpleNamespace(_all_props={}, all_properties={})
+    cache_charger_prop(dummy_charger, "sch_week", payload_default)
+    assert dummy_charger._all_props["sch_week"] == payload_default
+    assert dummy_charger.all_properties["sch_week"] == payload_default
+
+    # dt.time range edge and missing/non-list ranges
+    dt_edge_sched = {
+        "control": 1,
+        "ranges": [{"begin": dt.time(7, 15, 30), "end": dt.time(9, 0, 0)}],
+    }
+    extracted_dt = extract_schedule_data(dt_edge_sched)
+    assert extracted_dt is not None
+    assert extracted_dt["has_seconds"] is True
+    assert extracted_dt["ranges"][0]["begin"] == dt.time(7, 15, 30)
+
+    no_ranges_sched = extract_schedule_data({"control": 2, "ranges": "not-a-list"})
+    assert no_ranges_sched is not None
+    assert len(no_ranges_sched["ranges"]) == 2
+
+    # extract_schedule_range_time with invalid edge name
+    assert extract_schedule_range_time(ns_sched, 0, "invalid_edge") is None
+
+    # build_schedule_payload with out-of-range index, invalid edge name, non-dt.time value, and t.second != 0 when input has no seconds
+    payload_extra = build_schedule_payload(
+        legacy_dict,
+        range_updates={
+            0: {
+                "begin": dt.time(8, 30, 45),
+                "invalid": dt.time(1, 0),
+                "end": "not-a-time",  # type: ignore[dict-item]
+            },
+            99: {"begin": dt.time(5, 0)},
+        },
+    )
+    assert payload_extra["ranges"][0]["begin"] == {
+        "hour": 8,
+        "minute": 30,
+        "second": 45,
+    }
+    assert payload_extra["ranges"][0]["end"] == {"hour": 6, "minute": 0}
+
+
+@pytest.mark.asyncio
+async def test_async_write_schedule_property_serializes_concurrent_writers() -> None:
+    """Concurrent schedule writers share the per-charger lock so neither overwrites the other."""
+    import asyncio
+    import datetime as dt
+    from types import SimpleNamespace
+
+    from custom_components.wattpilot.utils import async_write_schedule_property
+
+    initial = {
+        "control": 0,
+        "ranges": [
+            {"begin": {"hour": 23, "minute": 0}, "end": {"hour": 15, "minute": 0}},
+            {"begin": {"hour": 0, "minute": 0}, "end": {"hour": 0, "minute": 0}},
+        ],
+    }
+    charger = SimpleNamespace(
+        _all_props={"sch_week": initial}, all_properties={"sch_week": initial}
+    )
+
+    async def slow_set_property(key: str, value: Any) -> None:
+        await asyncio.sleep(0.01)
+
+    charger.set_property = AsyncMock(side_effect=slow_set_property)
+    entry = SimpleNamespace(runtime_data=SimpleNamespace(schedule_lock=asyncio.Lock()))
+
+    await asyncio.gather(
+        async_write_schedule_property(
+            entry,
+            charger,
+            "sch_week",
+            control=3,
+        ),
+        async_write_schedule_property(
+            entry,
+            charger,
+            "sch_week",
+            range_updates={0: {"begin": dt.time(22, 30)}},
+        ),
+    )
+    final_sched = charger.all_properties["sch_week"]
+    assert final_sched["control"] == 3
+    assert final_sched["ranges"][0]["begin"] == {"hour": 22, "minute": 30}
+    assert final_sched["ranges"][0]["end"] == {"hour": 15, "minute": 0}
+
+    # Also test fallback when entry has no schedule_lock attribute
+    await async_write_schedule_property(
+        None,
+        charger,
+        "sch_week",
+        control=1,
+    )
+    assert charger.all_properties["sch_week"]["control"] == 1

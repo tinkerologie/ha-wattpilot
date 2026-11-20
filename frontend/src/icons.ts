@@ -2,10 +2,12 @@ import { html, svg, type TemplateResult } from "lit";
 
 export {
   mdiAlertCircleOutline,
+  mdiCalendarClock,
   mdiCarClock,
   mdiChevronRight,
   mdiClose,
   mdiCogOutline,
+  mdiContentCopy,
   mdiEvPlugType2,
   mdiEvStation,
   mdiHomeBatteryOutline,
