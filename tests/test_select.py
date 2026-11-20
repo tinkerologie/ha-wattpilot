@@ -414,3 +414,54 @@ class TestChargerSelect:
             select._opt_dict.keys = MagicMock(side_effect=Exception("Test error"))
             state = await select._async_update_validate_platform_state(1)
             assert state is None
+
+    @pytest.mark.asyncio
+    async def test_schedule_control_select_option_builds_payload(
+        self,
+        hass: HomeAssistant,
+        mock_charger: MagicMock,
+        mock_coordinator: MagicMock,
+        mock_config_entry_data: dict,
+    ) -> None:
+        """Test schedule control select reads attributes and writes full schedule object."""
+        from custom_components.wattpilot.descriptions import SELECT_DESCRIPTIONS
+        from custom_components.wattpilot.select import ChargerSelect
+
+        desc = next(
+            d for d in SELECT_DESCRIPTIONS if d.key == "schedule_weekday_control"
+        )
+        entry = self._make_entry(
+            hass, mock_charger, mock_coordinator, mock_config_entry_data
+        )
+        raw_sched = {
+            "control": 3,
+            "ranges": [
+                {
+                    "begin": {"hour": 23, "minute": 0, "second": 0},
+                    "end": {"hour": 15, "minute": 0, "second": 0},
+                },
+                {
+                    "begin": {"hour": 0, "minute": 0, "second": 0},
+                    "end": {"hour": 0, "minute": 0, "second": 0},
+                },
+            ],
+        }
+        mock_charger.all_properties["sch_week"] = raw_sched
+        mock_charger.set_property = AsyncMock()
+
+        select = ChargerSelect(hass, entry, desc, mock_charger)
+        select.async_write_ha_state = MagicMock()
+        await select.async_local_push(raw_sched)
+        assert select.current_option == "Allow Charging + PV Surplus"
+        assert select.extra_state_attributes["range_1"] == "23:00 - 15:00"
+
+        await select.async_select_option("Block Charging")
+        mock_charger.set_property.assert_awaited_once()
+        called_key, called_payload = mock_charger.set_property.call_args.args
+        assert called_key == "sch_week"
+        assert called_payload["control"] == 2
+        assert called_payload["ranges"][0]["begin"] == {
+            "hour": 23,
+            "minute": 0,
+            "second": 0,
+        }

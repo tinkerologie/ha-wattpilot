@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Built-in Charging Timer Schedules (`sch_week`, `sch_satur`, `sch_sund`)**:
+  - Added 3 `select` entities (`schedule_weekday_control`, `schedule_saturday_control`, `schedule_sunday_control`) to view and modify the Wattpilot Charging Timer control mode (`Disabled`, `Allow Charging`, `Block Charging`, `Allow Charging + PV Surplus`, `Block Charging + PV Surplus`) with formatted `range_1` and `range_2` state attributes.
+  - Added 12 `time` entities (`schedule_weekday_start_1`, `schedule_weekday_end_1`, `schedule_weekday_start_2`, `schedule_weekday_end_2`, `schedule_saturday_start_1`, `schedule_saturday_end_1`, `schedule_saturday_start_2`, `schedule_saturday_end_2`, `schedule_sunday_start_1`, `schedule_sunday_end_1`, `schedule_sunday_start_2`, `schedule_sunday_end_2`) to view and modify both time windows for weekdays, Saturday, and Sunday directly from Home Assistant.
+  - Added `wattpilot.set_charging_schedule` service to update control mode and/or time windows for `weekday`, `saturday`, `sunday`, `weekend`, or `all` in a single service call.
+
 ## [2026.11.0] - 2026-11-10
 
 ### Changed

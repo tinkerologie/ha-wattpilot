@@ -25,8 +25,10 @@ from .descriptions import (
     WattpilotDescriptionMixin,
 )
 from .utils import (
+    SCHEDULE_CHARGER_KEYS,
     GetChargerProp,
     async_GetChargerProp,
+    format_schedule_attributes,
     has_charger_prop,
 )
 
@@ -566,7 +568,7 @@ class ChargerPlatformEntity(CoordinatorEntity["WattpilotCoordinator"]):
         """Async: Validate the given state, set attributes if necessary and return new state."""
         desc = cast("WattpilotDescriptionMixin", self.entity_description)
         try:
-            if str(state).startswith("namespace"):
+            if str(state).startswith("namespace") or isinstance(state, dict):
                 _LOGGER.debug(
                     "%s - %s: _async_update_validate_property: process namespace value",
                     self._charger_id,
@@ -581,11 +583,23 @@ class ChargerPlatformEntity(CoordinatorEntity["WattpilotCoordinator"]):
                         self._identifier,
                     )
                     return None
-                state = getattr(namespace, str(desc.value_id), STATE_UNKNOWN)
-                for attr_id in desc.attribute_ids or []:
-                    self._attributes[attr_id] = getattr(
-                        namespace, attr_id, STATE_UNKNOWN
-                    )
+                if (
+                    self._identifier in SCHEDULE_CHARGER_KEYS
+                    and desc.value_id == "control"
+                ):
+                    self._attributes.update(format_schedule_attributes(namespace))
+                if isinstance(namespace, dict):
+                    state = namespace.get(str(desc.value_id), STATE_UNKNOWN)
+                    for attr_id in desc.attribute_ids or []:
+                        self._attributes[attr_id] = namespace.get(
+                            attr_id, STATE_UNKNOWN
+                        )
+                else:
+                    state = getattr(namespace, str(desc.value_id), STATE_UNKNOWN)
+                    for attr_id in desc.attribute_ids or []:
+                        self._attributes[attr_id] = getattr(
+                            namespace, attr_id, STATE_UNKNOWN
+                        )
             elif isinstance(state, list):
                 state_list = state
                 if desc.value_id is None:

@@ -21,7 +21,13 @@ from .descriptions import (
     WattpilotSelectEntityDescription,
 )
 from .entities import ChargerPlatformEntity, filter_descriptions
-from .utils import register_push_entity
+from .utils import (
+    SCHEDULE_CHARGER_KEYS,
+    GetChargerProp,
+    build_schedule_payload,
+    cache_charger_prop,
+    register_push_entity,
+)
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -133,4 +139,15 @@ class ChargerSelect(ChargerPlatformEntity, SelectEntity):
                 translation_key="invalid_option",
                 translation_placeholders={"option": option},
             )
+        if (
+            self._identifier in SCHEDULE_CHARGER_KEYS
+            and self.entity_description.value_id == "control"
+        ):
+            current_raw = GetChargerProp(self._charger, self._identifier, None)
+            payload = build_schedule_payload(current_raw, control=int(key))
+            await self._async_write(
+                self._charger.set_property(self._identifier, payload)
+            )
+            cache_charger_prop(self._charger, self._identifier, payload)
+            return
         await self._async_write(self._charger.set_property(self._identifier, key))

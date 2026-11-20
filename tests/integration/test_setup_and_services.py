@@ -49,6 +49,7 @@ async def test_setup_and_unload(
     mock_charger.on_property_change.assert_called_once()
     for service in (
         "set_next_trip",
+        "set_charging_schedule",
         "set_goe_cloud",
         "disconnect_charger",
         "reconnect_charger",
@@ -336,3 +337,83 @@ async def test_setup_migrates_legacy_unique_id(
 
     _async_migrate_unique_id(hass, other, "12345678")
     assert other.unique_id == "192.168.1.200"
+
+
+async def test_set_charging_schedule_service(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    connect_charger: AsyncMock,
+    mock_charger: MagicMock,
+) -> None:
+    """set_charging_schedule updates targeted day groups and validates inputs."""
+    mock_charger.set_property = AsyncMock()
+    await _setup(hass, config_entry)
+    device_id = _device_id(hass, config_entry)
+
+    await hass.services.async_call(
+        DOMAIN,
+        "set_charging_schedule",
+        {
+            "device_id": device_id,
+            "schedule": "all",
+            "control": "Allow Charging + PV Surplus",
+            "start_time_1": "23:00:00",
+            "end_time_1": "15:00:00",
+            "start_time_2": "06:00:00",
+            "end_time_2": "08:00:00",
+        },
+        blocking=True,
+    )
+    assert mock_charger.set_property.await_count == 3
+    assert mock_charger.all_properties["sch_week"]["control"] == 3
+    assert mock_charger.all_properties["sch_satur"]["ranges"][0]["begin"] == {
+        "hour": 23,
+        "minute": 0,
+        "second": 0,
+    }
+    assert mock_charger.all_properties["sch_sund"]["ranges"][1]["end"] == {
+        "hour": 8,
+        "minute": 0,
+        "second": 0,
+    }
+
+    # Numeric control option
+    await hass.services.async_call(
+        DOMAIN,
+        "set_charging_schedule",
+        {"device_id": device_id, "schedule": "weekday", "control": 0},
+        blocking=True,
+    )
+    assert mock_charger.all_properties["sch_week"]["control"] == 0
+
+    # Validation errors: invalid control, bool control, empty update, charger failure
+    with pytest.raises(ServiceValidationError):
+        await hass.services.async_call(
+            DOMAIN,
+            "set_charging_schedule",
+            {"device_id": device_id, "schedule": "weekday", "control": "invalid"},
+            blocking=True,
+        )
+    with pytest.raises(ServiceValidationError):
+        await hass.services.async_call(
+            DOMAIN,
+            "set_charging_schedule",
+            {"device_id": device_id, "schedule": "weekday", "control": True},
+            blocking=True,
+        )
+    with pytest.raises(ServiceValidationError):
+        await hass.services.async_call(
+            DOMAIN,
+            "set_charging_schedule",
+            {"device_id": device_id, "schedule": "weekday"},
+            blocking=True,
+        )
+
+    mock_charger.set_property.side_effect = WattpilotError("timeout")
+    with pytest.raises(HomeAssistantError):
+        await hass.services.async_call(
+            DOMAIN,
+            "set_charging_schedule",
+            {"device_id": device_id, "schedule": "weekday", "control": 1},
+            blocking=True,
+        )

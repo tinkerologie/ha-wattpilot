@@ -145,6 +145,40 @@
           "description": "Die zu verbindende Ladestation."
         }
       }
+    },
+    "set_charging_schedule": {
+      "name": "Ladezeitplan setzen",
+      "description": "Aktualisiert den integrierten Wattpilot-Ladezeitplan für Wochentage, Samstag, Sonntag oder alle Tage.",
+      "fields": {
+        "device_id": {
+          "name": "Ladestation",
+          "description": "Die zu konfigurierende Ladestation."
+        },
+        "schedule": {
+          "name": "Zeitplan-Tagesgruppe",
+          "description": "Welche Tagesgruppe aktualisiert werden soll (weekday, saturday, sunday, weekend oder all)."
+        },
+        "control": {
+          "name": "Steuermodus",
+          "description": "Steuermodus des Ladezeitplans."
+        },
+        "start_time_1": {
+          "name": "Zeitfenster 1 Startzeit",
+          "description": "Startzeit für Zeitfenster 1."
+        },
+        "end_time_1": {
+          "name": "Zeitfenster 1 Endzeit",
+          "description": "Endzeit für Zeitfenster 1."
+        },
+        "start_time_2": {
+          "name": "Zeitfenster 2 Startzeit",
+          "description": "Startzeit für Zeitfenster 2."
+        },
+        "end_time_2": {
+          "name": "Zeitfenster 2 Endzeit",
+          "description": "Endzeit für Zeitfenster 2."
+        }
+      }
     }
   },
   "entity": {
@@ -343,6 +377,15 @@
       },
       "cable_unlock_select": {
         "name": "Kabelverriegelung"
+      },
+      "schedule_weekday_control": {
+        "name": "Zeitplan Wochentag Modus"
+      },
+      "schedule_saturday_control": {
+        "name": "Zeitplan Samstag Modus"
+      },
+      "schedule_sunday_control": {
+        "name": "Zeitplan Sonntag Modus"
       }
     },
     "button": {
@@ -370,6 +413,42 @@
     "time": {
       "next_trip_time": {
         "name": "Nächste Abfahrtszeit"
+      },
+      "schedule_weekday_start_1": {
+        "name": "Zeitplan Wochentag Start 1"
+      },
+      "schedule_weekday_end_1": {
+        "name": "Zeitplan Wochentag Ende 1"
+      },
+      "schedule_weekday_start_2": {
+        "name": "Zeitplan Wochentag Start 2"
+      },
+      "schedule_weekday_end_2": {
+        "name": "Zeitplan Wochentag Ende 2"
+      },
+      "schedule_saturday_start_1": {
+        "name": "Zeitplan Samstag Start 1"
+      },
+      "schedule_saturday_end_1": {
+        "name": "Zeitplan Samstag Ende 1"
+      },
+      "schedule_saturday_start_2": {
+        "name": "Zeitplan Samstag Start 2"
+      },
+      "schedule_saturday_end_2": {
+        "name": "Zeitplan Samstag Ende 2"
+      },
+      "schedule_sunday_start_1": {
+        "name": "Zeitplan Sonntag Start 1"
+      },
+      "schedule_sunday_end_1": {
+        "name": "Zeitplan Sonntag Ende 1"
+      },
+      "schedule_sunday_start_2": {
+        "name": "Zeitplan Sonntag Start 2"
+      },
+      "schedule_sunday_end_2": {
+        "name": "Zeitplan Sonntag Ende 2"
       }
     }
   },

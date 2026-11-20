@@ -145,6 +145,40 @@
           "description": "The charger device to reconnect."
         }
       }
+    },
+    "set_charging_schedule": {
+      "name": "Set charging schedule",
+      "description": "Update the built-in Wattpilot charging timer schedule for weekdays, Saturday, Sunday, or all days.",
+      "fields": {
+        "device_id": {
+          "name": "Charger",
+          "description": "The charger device to configure."
+        },
+        "schedule": {
+          "name": "Schedule day group",
+          "description": "Which schedule day group to update (weekday, saturday, sunday, weekend, or all)."
+        },
+        "control": {
+          "name": "Control mode",
+          "description": "Charging timer control mode."
+        },
+        "start_time_1": {
+          "name": "Range 1 start time",
+          "description": "Start time for schedule range 1."
+        },
+        "end_time_1": {
+          "name": "Range 1 end time",
+          "description": "End time for schedule range 1."
+        },
+        "start_time_2": {
+          "name": "Range 2 start time",
+          "description": "Start time for schedule range 2."
+        },
+        "end_time_2": {
+          "name": "Range 2 end time",
+          "description": "End time for schedule range 2."
+        }
+      }
     }
   },
   "entity": {
@@ -354,6 +388,15 @@
       },
       "cable_unlock_select": {
         "name": "Cable Unlock"
+      },
+      "schedule_weekday_control": {
+        "name": "Schedule Weekday Control"
+      },
+      "schedule_saturday_control": {
+        "name": "Schedule Saturday Control"
+      },
+      "schedule_sunday_control": {
+        "name": "Schedule Sunday Control"
       }
     },
     "button": {
@@ -381,6 +424,42 @@
     "time": {
       "next_trip_time": {
         "name": "Next Trip Time"
+      },
+      "schedule_weekday_start_1": {
+        "name": "Schedule Weekday Start 1"
+      },
+      "schedule_weekday_end_1": {
+        "name": "Schedule Weekday End 1"
+      },
+      "schedule_weekday_start_2": {
+        "name": "Schedule Weekday Start 2"
+      },
+      "schedule_weekday_end_2": {
+        "name": "Schedule Weekday End 2"
+      },
+      "schedule_saturday_start_1": {
+        "name": "Schedule Saturday Start 1"
+      },
+      "schedule_saturday_end_1": {
+        "name": "Schedule Saturday End 1"
+      },
+      "schedule_saturday_start_2": {
+        "name": "Schedule Saturday Start 2"
+      },
+      "schedule_saturday_end_2": {
+        "name": "Schedule Saturday End 2"
+      },
+      "schedule_sunday_start_1": {
+        "name": "Schedule Sunday Start 1"
+      },
+      "schedule_sunday_end_1": {
+        "name": "Schedule Sunday End 1"
+      },
+      "schedule_sunday_start_2": {
+        "name": "Schedule Sunday Start 2"
+      },
+      "schedule_sunday_end_2": {
+        "name": "Schedule Sunday End 2"
       }
     }
   },
