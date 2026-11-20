@@ -465,3 +465,16 @@ class TestChargerSelect:
             "minute": 0,
             "second": 0,
         }
+
+        # Dict state with attribute_ids populates extra_state_attributes
+        desc_with_attrs = self._make_select_description(
+            value_id="control",
+            attribute_ids=["extra_a", "extra_b"],
+        )
+        select_attrs = ChargerSelect(hass, entry, desc_with_attrs, mock_charger)
+        val = await select_attrs._async_update_validate_property(
+            {"control": 1, "extra_a": "foo"}
+        )
+        assert val == 1
+        assert select_attrs.extra_state_attributes["extra_a"] == "foo"
+        assert select_attrs.extra_state_attributes["extra_b"] == STATE_UNKNOWN

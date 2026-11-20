@@ -461,4 +461,42 @@ describe("wattpilot-schedule-card", () => {
     });
     expect(entry?.getEntitySuggestion?.(hass, "sensor.wp_power")).toBeNull();
   });
+
+  it("handles slot edits and copy action without device_id or with unavailable weekday control", async () => {
+    const hass = createHass();
+    const cardNoDevice = await mount<Card>("wattpilot-schedule-card", hass, {
+      device_id: undefined,
+      entities: {
+        schedule_weekday_control: "select.wp_sch_week_control",
+        schedule_saturday_control: "select.wp_sch_satur_control",
+      },
+    });
+    const times = shadow(cardNoDevice).querySelectorAll<HTMLInputElement>('input[type="time"]');
+    expect(times.length).toBe(4);
+    times[0]!.value = "21:00";
+    times[0]!.dispatchEvent(new Event("change"));
+    click(cardNoDevice, ".copy-button");
+    expect(hass.calls).toEqual([]);
+
+    const cardDirect = document.createElement("wattpilot-schedule-card") as Card & {
+      _copyWeekdayToWeekend(): void;
+      _updateSlotEdge(
+        group: unknown,
+        slotNumber: 1 | 2,
+        edge: "start" | "end",
+        hms: string,
+        timeEntity: undefined
+      ): void;
+    };
+    cardDirect.setConfig({ type: "custom:wattpilot-schedule-card", device_id: "dev1" });
+    cardDirect._copyWeekdayToWeekend();
+    cardDirect._updateSlotEdge({ id: "weekday" }, 1, "start", "10:00:00", undefined);
+
+    const hassUnavailable = createHass({
+      schedule_weekday_control: entity("select.wp_sch_week_control", "unavailable"),
+    });
+    cardDirect.hass = hassUnavailable;
+    cardDirect._copyWeekdayToWeekend();
+    expect(hassUnavailable.calls).toEqual([]);
+  });
 });

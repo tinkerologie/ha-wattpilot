@@ -25,10 +25,8 @@ from .utils import (
     SCHEDULE_CONTROL_ALIASES,
     SCHEDULE_CONTROL_OPTIONS,
     SCHEDULE_DAY_GROUP_MAP,
-    GetChargerProp,
     async_ConnectCharger,
-    build_schedule_payload,
-    cache_charger_prop,
+    async_write_schedule_property,
 )
 
 if TYPE_CHECKING:
@@ -211,14 +209,13 @@ async def _async_set_charging_schedule(call: ServiceCall) -> None:
 
     try:
         for prop_key in target_keys:
-            current_raw = GetChargerProp(charger, prop_key, None)
-            payload = build_schedule_payload(
-                current_raw,
+            await async_write_schedule_property(
+                entry,
+                charger,
+                prop_key,
                 control=control_val,
                 range_updates=range_updates,
             )
-            await charger.set_property(prop_key, payload)
-            cache_charger_prop(charger, prop_key, payload)
     except Exception as err:
         raise _service_failed(SERVICE_SET_CHARGING_SCHEDULE, err) from err
 

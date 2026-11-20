@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import datetime as dt
 import logging
 from collections.abc import Mapping
@@ -264,6 +265,31 @@ def cache_charger_prop(charger: Any, identifier: str, value: Any) -> None:
     mock_props = getattr(charger, "all_properties", None)
     if isinstance(mock_props, dict):
         mock_props[identifier] = value
+
+
+async def async_write_schedule_property(
+    entry: Any,
+    charger: Any,
+    identifier: str,
+    *,
+    control: int | None = None,
+    range_updates: Mapping[int, Mapping[str, dt.time]] | None = None,
+) -> dict[str, Any]:
+    """Serialize schedule read-modify-write and cache updates under one per-charger lock."""
+    runtime_data = getattr(entry, "runtime_data", None)
+    lock = getattr(runtime_data, "schedule_lock", None)
+    if not isinstance(lock, asyncio.Lock):
+        lock = asyncio.Lock()
+    async with lock:
+        current_raw = GetChargerProp(charger, identifier, None)
+        payload = build_schedule_payload(
+            current_raw,
+            control=control,
+            range_updates=range_updates,
+        )
+        await charger.set_property(identifier, payload)
+        cache_charger_prop(charger, identifier, payload)
+        return payload
 
 
 async def async_property_update_handler(

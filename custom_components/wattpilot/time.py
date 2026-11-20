@@ -21,9 +21,7 @@ from .descriptions import (
 )
 from .entities import ChargerPlatformEntity, filter_descriptions
 from .utils import (
-    GetChargerProp,
-    build_schedule_payload,
-    cache_charger_prop,
+    async_write_schedule_property,
     extract_schedule_range_time,
     register_push_entity,
 )
@@ -122,14 +120,13 @@ class ChargerTime(ChargerPlatformEntity, TimeEntity):
         """Async: Set the time value on the charger."""
         desc = self.entity_description
         if desc.range_index is not None and desc.range_edge is not None:
-            current_raw = GetChargerProp(self._charger, self._identifier, None)
-            payload = build_schedule_payload(
-                current_raw,
-                range_updates={desc.range_index: {desc.range_edge: value}},
-            )
             await self._async_write(
-                self._charger.set_property(self._identifier, payload)
+                async_write_schedule_property(
+                    self._entry,
+                    self._charger,
+                    self._identifier,
+                    range_updates={desc.range_index: {desc.range_edge: value}},
+                )
             )
-            cache_charger_prop(self._charger, self._identifier, payload)
             return
         await self._async_write(self._charger.set_next_trip(value))

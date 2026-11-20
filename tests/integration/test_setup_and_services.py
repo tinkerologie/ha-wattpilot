@@ -398,6 +398,13 @@ async def test_set_charging_schedule_service(
         await hass.services.async_call(
             DOMAIN,
             "set_charging_schedule",
+            {"device_id": device_id, "schedule": "weekday", "control": 99},
+            blocking=True,
+        )
+    with pytest.raises(ServiceValidationError):
+        await hass.services.async_call(
+            DOMAIN,
+            "set_charging_schedule",
             {"device_id": device_id, "schedule": "weekday", "control": True},
             blocking=True,
         )
