@@ -1162,7 +1162,7 @@ wheels = [
 
 [[package]]
 name = "ha-wattpilot"
-version = "2026.11.1"
+version = "2026.11.2"
 source = { editable = "." }
 dependencies = [
     { name = "packaging" },
