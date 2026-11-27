@@ -76,6 +76,15 @@
       },
       "phase_switch": {
         "default": "mdi:car-3-plus"
+      },
+      "schedule_weekday_control": {
+        "default": "mdi:calendar-clock"
+      },
+      "schedule_saturday_control": {
+        "default": "mdi:calendar-weekend"
+      },
+      "schedule_sunday_control": {
+        "default": "mdi:calendar-weekend-outline"
       }
     },
     "sensor": {
@@ -204,11 +213,50 @@
     "time": {
       "next_trip_time": {
         "default": "mdi:calendar-clock"
+      },
+      "schedule_weekday_start_1": {
+        "default": "mdi:clock-start"
+      },
+      "schedule_weekday_end_1": {
+        "default": "mdi:clock-end"
+      },
+      "schedule_weekday_start_2": {
+        "default": "mdi:clock-start"
+      },
+      "schedule_weekday_end_2": {
+        "default": "mdi:clock-end"
+      },
+      "schedule_saturday_start_1": {
+        "default": "mdi:clock-start"
+      },
+      "schedule_saturday_end_1": {
+        "default": "mdi:clock-end"
+      },
+      "schedule_saturday_start_2": {
+        "default": "mdi:clock-start"
+      },
+      "schedule_saturday_end_2": {
+        "default": "mdi:clock-end"
+      },
+      "schedule_sunday_start_1": {
+        "default": "mdi:clock-start"
+      },
+      "schedule_sunday_end_1": {
+        "default": "mdi:clock-end"
+      },
+      "schedule_sunday_start_2": {
+        "default": "mdi:clock-start"
+      },
+      "schedule_sunday_end_2": {
+        "default": "mdi:clock-end"
       }
     }
   },
   "services": {
     "set_next_trip": {
+      "service": "mdi:calendar-clock"
+    },
+    "set_charging_schedule": {
       "service": "mdi:calendar-clock"
     },
     "set_goe_cloud": {

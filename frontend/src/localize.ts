@@ -10,6 +10,9 @@ const en = {
   "card.next_trip.name": "Wattpilot next trip",
   "card.next_trip.description":
     "Set the departure time and energy the car needs for its next trip.",
+  "card.schedule.name": "Wattpilot charging schedule",
+  "card.schedule.description":
+    "Configure the built-in charging timer schedules for weekdays, Saturday and Sunday.",
   "status.no_car.title": "Connect your car",
   "status.no_car.subtitle": "Plug in the cable to start charging your car",
   "status.charging.title": "Charging",
@@ -63,6 +66,18 @@ const en = {
   "label.activate_next_trip": "Use Next trip",
   "label.confirm_force_start":
     "Force charging ignores the charging mode and starts charging immediately. Continue?",
+  "label.schedule.title": "Charging schedules",
+  "label.schedule.weekday": "Mon–Fri (Weekdays)",
+  "label.schedule.saturday": "Saturday",
+  "label.schedule.sunday": "Sunday",
+  "label.schedule.slot1": "Slot 1",
+  "label.schedule.slot2": "Slot 2",
+  "label.schedule.copy_weekday": "Copy Mon–Fri → Sat & Sun",
+  "label.schedule.control.Disabled": "Disabled",
+  "label.schedule.control.Allow Charging": "Allow Charging",
+  "label.schedule.control.Block Charging": "Block Charging",
+  "label.schedule.control.Allow Charging + PV Surplus": "Allow Charging + PV Surplus",
+  "label.schedule.control.Block Charging + PV Surplus": "Block Charging + PV Surplus",
   "error.no_device":
     "No Wattpilot charger found. Select a charger in the card editor.",
   "error.entity_missing": "Entity not available",
@@ -79,6 +94,7 @@ const en = {
   "editor.show_charging_speed": "Show charging speed",
   "editor.show_phase_mode": "Show phase mode",
   "editor.show_remain_in_eco": "Show stay in Eco switch",
+  "editor.show_slot_2": "Show second time slot (Slot 2)",
   "editor.entities": "Entity overrides",
   "editor.entities_helper":
     "Optional. Pick entities only when automatic detection on the charger picks the wrong one.",
@@ -96,6 +112,9 @@ const de: Partial<Record<TranslationKey, string>> = {
   "card.next_trip.name": "Wattpilot Nächste Fahrt",
   "card.next_trip.description":
     "Abfahrtszeit und benötigte Energie für die nächste Fahrt festlegen.",
+  "card.schedule.name": "Wattpilot Ladezeitplan",
+  "card.schedule.description":
+    "Integrierte Ladezeitpläne für Wochentage, Samstag und Sonntag konfigurieren.",
   "status.no_car.title": "Fahrzeug anschließen",
   "status.no_car.subtitle": "Stecke das Kabel ein, um mit dem Laden zu beginnen",
   "status.charging.title": "Lädt",
@@ -148,6 +167,18 @@ const de: Partial<Record<TranslationKey, string>> = {
   "label.activate_next_trip": "Nächste Fahrt verwenden",
   "label.confirm_force_start":
     "Sofortladen ignoriert den Lademodus und startet sofort. Fortfahren?",
+  "label.schedule.title": "Ladezeitpläne",
+  "label.schedule.weekday": "Mo–Fr (Wochentage)",
+  "label.schedule.saturday": "Samstag",
+  "label.schedule.sunday": "Sonntag",
+  "label.schedule.slot1": "Fenster 1",
+  "label.schedule.slot2": "Fenster 2",
+  "label.schedule.copy_weekday": "Mo–Fr → Sa & So kopieren",
+  "label.schedule.control.Disabled": "Deaktiviert",
+  "label.schedule.control.Allow Charging": "Laden erlauben",
+  "label.schedule.control.Block Charging": "Laden sperren",
+  "label.schedule.control.Allow Charging + PV Surplus": "Laden erlauben + PV-Überschuss",
+  "label.schedule.control.Block Charging + PV Surplus": "Laden sperren + PV-Überschuss",
   "error.no_device":
     "Kein Wattpilot gefunden. Wähle im Karteneditor eine Ladestation aus.",
   "error.entity_missing": "Entität nicht verfügbar",
@@ -164,6 +195,7 @@ const de: Partial<Record<TranslationKey, string>> = {
   "editor.show_charging_speed": "Ladestrom anzeigen",
   "editor.show_phase_mode": "Phasenumschaltung anzeigen",
   "editor.show_remain_in_eco": "Schalter Im Eco-Modus bleiben anzeigen",
+  "editor.show_slot_2": "Zweites Zeitfenster (Fenster 2) anzeigen",
   "editor.entities": "Entitäten überschreiben",
   "editor.entities_helper":
     "Optional. Nur auswählen, wenn die automatische Erkennung die falsche Entität findet.",
