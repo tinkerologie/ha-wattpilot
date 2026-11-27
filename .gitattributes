@@ -11,3 +11,4 @@
 *.gz binary
 *.woff binary
 *.woff2 binary
+custom_components/wattpilot/frontend/wattpilot-cards.js linguist-generated=true

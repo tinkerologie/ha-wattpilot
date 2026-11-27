@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Minify multiline whitespace inside `css`, `html`, and `svg` template literals during the frontend production build so `wattpilot-cards.js` is emitted as a compact minified bundle (reducing bundle size and resolving CodeQL alert #9 on bundled `lit-html`) ([#248](https://github.com/tinkerologie/ha-wattpilot/issues/248)).
+
 ## [2026.11.2] - 2026-11-27
 
 ### Changed
