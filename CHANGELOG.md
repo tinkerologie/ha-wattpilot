@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Explicit `NumberMode.BOX` and `NumberMode.SLIDER` input modes on `number` entities so wide-range values (`start_charging_at`, `next_trip_charging`, `max_price`, `three_phase_power_level`, `phase_switch_delay`, `phase_switch_interval`) render as clean numeric boxes on the Device page instead of 0–999999 sliders, while percentage/minute thresholds (`pv_battery_threshold`, `boost_discharges_until`, `pv_battery_discharges_until`, `ohmpilot_threshold`, `min_charging_time`) render as sliders.
 
+### Fixed
+
+- Unscaled integer `number` entities (`set_type="int"`) now send `int` values to the charger instead of `float`, fixing `value must be uint8_t` rejections when setting `pv_battery_discharges_until` (`pdt`) ([#224](https://github.com/tinkerologie/ha-wattpilot/issues/224)).
+
 ## [2026.11.0] - 2026-11-10
 
 ### Changed
