@@ -147,10 +147,10 @@ class ChargerNumber(ChargerPlatformEntity, NumberEntity):
         if self._identifier == "fte":
             await self._async_write(self._charger.set_next_trip_energy(value))
             return
-        raw_val: float = value
+        raw_val: int | float = value
         scale = getattr(self.entity_description, "scale_factor", None)
         if scale:
             raw_val = value / scale
-            if self.entity_description.set_type == "int":
-                raw_val = round(raw_val)
+        if self.entity_description.set_type == "int":
+            raw_val = round(raw_val)
         await self._async_write(self._charger.set_property(self._identifier, raw_val))

@@ -11,6 +11,7 @@ from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 
 from custom_components.wattpilot.button import ChargerButton
 from custom_components.wattpilot.descriptions import (
+    NUMBER_DESCRIPTIONS,
     WattpilotButtonEntityDescription,
     WattpilotNumberEntityDescription,
     WattpilotSelectEntityDescription,
@@ -106,6 +107,7 @@ async def test_writes_reach_the_charger(
         ("fup", True),
         ("fup", True),
     ]
+    assert type(charger.set_property.await_args_list[2].args[1]) is int
 
     await _number(
         mock_hass, mock_config_entry, charger, key="fte"
@@ -177,3 +179,73 @@ async def test_charger_refusal_is_reported(
         await _number(mock_hass, mock_config_entry, charger).async_set_native_value(99)
 
     assert "amp out of range" in err.value.translation_placeholders["error"]
+
+
+async def test_pdt_write_sends_int(
+    mock_hass: MagicMock, mock_config_entry: Any, charger: MagicMock
+) -> None:
+    """Writing pdt (pv_battery_discharges_until) sends an exact int, not float."""
+    desc = next(d for d in NUMBER_DESCRIPTIONS if d.charger_key == "pdt")
+    charger.firmware = "41.7"
+    charger.all_properties["pdt"] = 20
+
+    entity = ChargerNumber(mock_hass, mock_config_entry, desc, charger)
+    await entity.async_set_native_value(49.0)
+
+    charger.set_property.assert_awaited_once_with("pdt", 49)
+    assert charger.set_property.await_args is not None
+    assert type(charger.set_property.await_args.args[1]) is int
+
+
+@pytest.mark.parametrize(
+    "desc",
+    [d for d in NUMBER_DESCRIPTIONS if d.set_type == "int" and d.scale_factor is None],
+    ids=lambda d: d.key,
+)
+async def test_unscaled_int_number_descriptions_send_int(
+    mock_hass: MagicMock,
+    mock_config_entry: Any,
+    charger: MagicMock,
+    desc: WattpilotNumberEntityDescription,
+) -> None:
+    """Every unscaled int-typed number description converts float inputs to int."""
+    charger.firmware = "41.7"
+    charger.all_properties[desc.charger_key] = 10
+
+    entity = ChargerNumber(mock_hass, mock_config_entry, desc, charger)
+    await entity.async_set_native_value(10.0)
+
+    charger.set_property.assert_awaited_once_with(desc.charger_key, 10)
+    assert charger.set_property.await_args is not None
+    assert type(charger.set_property.await_args.args[1]) is int
+
+
+async def test_unscaled_int_number_rounds_fractional_value(
+    mock_hass: MagicMock, mock_config_entry: Any, charger: MagicMock
+) -> None:
+    """Fractional floats for unscaled int-typed numbers round to nearest int."""
+    desc = next(d for d in NUMBER_DESCRIPTIONS if d.charger_key == "pdt")
+    charger.firmware = "41.7"
+    charger.all_properties["pdt"] = 20
+
+    entity = ChargerNumber(mock_hass, mock_config_entry, desc, charger)
+    await entity.async_set_native_value(42.6)
+
+    charger.set_property.assert_awaited_once_with("pdt", 43)
+    assert charger.set_property.await_args is not None
+    assert type(charger.set_property.await_args.args[1]) is int
+
+
+async def test_float_number_description_preserves_float(
+    mock_hass: MagicMock, mock_config_entry: Any, charger: MagicMock
+) -> None:
+    """Float-typed number descriptions pass through exact float values unchanged."""
+    desc = next(d for d in NUMBER_DESCRIPTIONS if d.charger_key == "awp")
+    charger.all_properties["awp"] = 10.0
+
+    entity = ChargerNumber(mock_hass, mock_config_entry, desc, charger)
+    await entity.async_set_native_value(12.5)
+
+    charger.set_property.assert_awaited_once_with("awp", 12.5)
+    assert charger.set_property.await_args is not None
+    assert type(charger.set_property.await_args.args[1]) is float
