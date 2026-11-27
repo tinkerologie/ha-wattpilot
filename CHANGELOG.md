@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Updated `wattpilot-api` requirement to `>=1.6.1` (adds `pdt` property definition with `jsonType: integer`).
+
 ## [2026.11.1] - 2026-11-27
 
 ### Added
